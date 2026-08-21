@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Gemini Updates{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+      
+      <div class="card card-stat border-0 shadow mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; font-size: 1.75rem;">
+              <i class="bi bi-person-fill"></i>
+            </div>
+            <div>
+              <h3 class="fw-bold mb-1">{{ user.full_name|default:user.username }}</h3>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %}">
+                  {{ user.get_role_display }}
+                </span>
+                <span class="text-muted small">Member since {{ user.date_joined|date:"F d, Y" }}</span>
+              </div>
+            </div>
+          </div>
+
+          <form method="post" action="{% url 'accounts:profile' %}">
+            {% csrf_token %}
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Username (Read-only)</label>
+                <input type="text" class="form-control" value="{{ user.username }}" readonly disabled>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Role (Read-only)</label>
+                <input type="text" class="form-control" value="{{ user.get_role_display }}" readonly disabled>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label for="{{ form.full_name.id_for_label }}" class="form-label fw-semibold">Full Name</label>
+                {{ form.full_name }}
+                {% if form.full_name.errors %}
+                <div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email Address</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label for="{{ form.phone_number.id_for_label }}" class="form-label fw-semibold">Phone Number</label>
+                {{ form.phone_number }}
+                {% if form.phone_number.errors %}
+                <div class="text-danger small mt-1">{{ form.phone_number.errors.0 }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Account Status</label>
+                <div>
+                  {% if user.is_active %}
+                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Active</span>
+                  {% else %}
+                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Inactive</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+              <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-key me-1"></i> Change Password
+              </a>
+              <button type="submit" class="btn btn-primary fw-bold px-4">
+                <i class="bi bi-save me-1"></i> Save Changes
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

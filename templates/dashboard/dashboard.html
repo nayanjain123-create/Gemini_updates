@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gemini Updates{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-3">
+  
+  <!-- Header Banner -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="fw-bold mb-1">Welcome back, {{ user.full_name|default:user.username }}!</h2>
+      <p class="text-muted mb-0">Overview for <strong>{{ current_month_name }} {{ today.year }}</strong> &bull; Today is {{ today|date:"l, F d, Y" }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'reports:daily_report' %}" class="btn btn-outline-primary fw-semibold">
+        <i class="bi bi-calendar3-range me-1"></i> Daily Report Tab
+      </a>
+      <a href="{% url 'compliance:compliance_report' %}" class="btn btn-primary fw-bold shadow-sm">
+        <i class="bi bi-clipboard-check me-1"></i> Compliance Matrix
+      </a>
+    </div>
+  </div>
+
+  {% if role == 'BOSS' %}
+  <!-- ==================== BOSS DASHBOARD ==================== -->
+  
+  <!-- Top Stat Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card card-stat border-0 shadow-sm border-start border-4 border-primary">
+        <div class="card-stat-title">Active Employees</div>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="card-stat-value">{{ total_active_employees }}</div>
+          <i class="bi bi-people fs-1 text-primary opacity-50"></i>
+        </div>
+        <div class="small text-muted mt-2"><i class="bi bi-info-circle me-1"></i> Managed in system</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card card-stat border-0 shadow-sm border-start border-4 border-success">
+        <div class="card-stat-title">Today's Reports Submitted</div>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="card-stat-value text-success">{{ submitted_today_count }}</div>
+          <i class="bi bi-check-circle fs-1 text-success opacity-50"></i>
+        </div>
+        <div class="small text-muted mt-2">{{ pending_today_count }} employee(s) pending today</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card card-stat border-0 shadow-sm border-start border-4 border-info">
+        <div class="card-stat-title">Completed Compliance</div>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="card-stat-value text-info">{{ completed_compliance_count }} <span class="fs-6 text-muted">/ {{ total_compliance_count }}</span></div>
+          <i class="bi bi-clipboard2-check fs-1 text-info opacity-50"></i>
+        </div>
+        <div class="small text-muted mt-2">For {{ current_month_name }} {{ today.year }}</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card card-stat border-0 shadow-sm border-start border-4 border-warning">
+        <div class="card-stat-title">Pending Compliance</div>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="card-stat-value text-warning">{{ pending_compliance_count }}</div>
+          <i class="bi bi-clock-history fs-1 text-warning opacity-50"></i>
+        </div>
+        <div class="small text-muted mt-2">Awaiting completion action</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Boss Detailed Views & Recent Activity -->
+  <div class="row g-4 mb-4">
+    <!-- Quick Actions & Links Card -->
+    <div class="col-12 col-lg-4">
+      <div class="card card-stat border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent py-3 border-bottom">
+          <h5 class="fw-bold mb-0"><i class="bi bi-lightning-charge-fill me-2 text-warning"></i> Boss Quick Controls</h5>
+        </div>
+        <div class="card-body p-3 d-flex flex-column gap-3">
+          <a href="{% url 'reports:task_list' %}" class="btn btn-outline-purple d-flex align-items-center justify-content-between p-3 text-start">
+            <div>
+              <div class="fw-bold"><i class="bi bi-list-check me-2"></i> Assign & Manage Tasks</div>
+              <div class="small text-muted">Assign tasks to employees and set priority</div>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </a>
+
+          <a href="{% url 'accounts:employee_list' %}" class="btn btn-outline-primary d-flex align-items-center justify-content-between p-3 text-start">
+            <div>
+              <div class="fw-bold"><i class="bi bi-person-gear me-2"></i> Employee Management</div>
+              <div class="small text-muted">Add, edit, or change user roles</div>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </a>
+
+          <a href="{% url 'reports:missing_daily_reports' %}" class="btn btn-outline-warning d-flex align-items-center justify-content-between p-3 text-start">
+            <div>
+              <div class="fw-bold"><i class="bi bi-exclamation-triangle me-2"></i> Missing Daily Reports</div>
+              <div class="small text-muted">Identify employees with missing entries</div>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </a>
+
+          <a href="{% url 'audit:audit_log_list' %}" class="btn btn-outline-info d-flex align-items-center justify-content-between p-3 text-start">
+            <div>
+              <div class="fw-bold"><i class="bi bi-journal-text me-2"></i> Audit Trail & Logs</div>
+              <div class="small text-muted">Review all system actions and histories</div>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent System Audit Feed -->
+    <div class="col-12 col-lg-8">
+      <div class="card card-stat border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0"><i class="bi bi-activity me-2 text-primary"></i> Recent Audit Activity</h5>
+          <a href="{% url 'audit:audit_log_list' %}" class="btn btn-sm btn-outline-secondary">View All Logs</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Timestamp</th>
+                  <th>User</th>
+                  <th>Action</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in recent_audit_logs %}
+                <tr>
+                  <td class="small text-muted">{{ log.created_at|date:"M d, H:i" }}</td>
+                  <td class="fw-semibold">{{ log.user.full_name|default:log.user.username|default:"System" }}</td>
+                  <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ log.action }}</span></td>
+                  <td class="small text-muted text-truncate" style="max-width: 250px;">{{ log.details|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">No activity logs recorded yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- ==================== EMPLOYEE DASHBOARD ==================== -->
+
+  <div class="row g-3 mb-4">
+    <!-- Today's Task Status Card -->
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 {% if today_submitted %}border-success{% else %}border-danger{% endif %}">
+        <div class="card-stat-title">Today's Daily Task</div>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          {% if today_submitted %}
+            <div>
+              <span class="badge badge-completed fs-6"><i class="bi bi-check-circle-fill me-1"></i> Submitted</span>
+              <div class="small text-muted mt-2">Status: <strong class="text-body">{{ today_task.get_status_display }}</strong></div>
+            </div>
+          {% else %}
+            <div>
+              <span class="badge badge-blocked fs-6"><i class="bi bi-exclamation-octagon-fill me-1"></i> Not Submitted Yet</span>
+              <div class="small text-muted mt-2">Please submit your updates for today</div>
+            </div>
+          {% endif %}
+          <i class="bi bi-calendar-event fs-1 text-muted opacity-50"></i>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-primary fw-bold w-100" data-bs-toggle="modal" data-bs-target="#editTodayTaskModal">
+            <i class="bi bi-pencil-square me-1"></i> {% if today_submitted %}Update Today's Task{% else %}Submit Today's Task{% endif %}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Progress Card -->
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 border-primary">
+        <div class="card-stat-title">Monthly Daily Reports</div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="card-stat-value">{{ user_monthly_tasks_count }} <span class="fs-6 text-muted">/ {{ num_days_in_month }} days</span></div>
+          <div class="fw-bold fs-4 text-primary">{{ completion_pct }}%</div>
+        </div>
+        <div class="progress mb-2" style="height: 8px;">
+          <div class="progress-bar bg-primary" role="progressbar" style="width: {{ completion_pct }}%;" aria-valuenow="{{ completion_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="small text-muted">Submitted for {{ current_month_name }} {{ today.year }}</div>
+      </div>
+    </div>
+
+    <!-- Compliance Overview Card -->
+    <div class="col-12 col-md-12 col-xl-4">
+      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 border-info">
+        <div class="card-stat-title">Compliance Matrix Overview</div>
+        <div class="row text-center my-2">
+          <div class="col-6">
+            <div class="fs-3 fw-bold text-success">{{ completed_compliance_count }}</div>
+            <div class="small text-muted">Completed</div>
+          </div>
+          <div class="col-6">
+            <div class="fs-3 fw-bold text-warning">{{ pending_compliance_count }}</div>
+            <div class="small text-muted">Pending</div>
+          </div>
+        </div>
+        <a href="{% url 'compliance:compliance_report' %}" class="btn btn-sm btn-outline-info w-100 mt-2">
+          <i class="bi bi-box-arrow-up-right me-1"></i> Open Compliance Matrix
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Boss Comments & Compliance Updates -->
+  <div class="row g-4">
+    <!-- Boss Comments on User Tasks -->
+    <div class="col-12 col-lg-6">
+      <div class="card card-stat border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent py-3 border-bottom">
+          <h5 class="fw-bold mb-0"><i class="bi bi-chat-left-text-fill me-2 text-purple"></i> Boss Comments on Your Tasks</h5>
+        </div>
+        <div class="card-body p-3">
+          {% for c in my_task_comments %}
+          <div class="p-3 mb-2 rounded bg-body-tertiary border">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-bold text-purple"><i class="bi bi-person-badge me-1"></i> {{ c.boss.full_name|default:c.boss.username }}</span>
+              <span class="small text-muted">{{ c.created_at|date:"M d, Y H:i" }}</span>
+            </div>
+            <p class="mb-1 text-break text-body">{{ c.comment }}</p>
+            <div class="small text-muted">On Task for <strong class="text-body">{{ c.daily_task_report.report_date|date:"F d, Y" }}</strong></div>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-chat-square-dots fs-1 d-block mb-2"></i>
+            No boss comments attached to your tasks yet.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Compliance Items Completed -->
+    <div class="col-12 col-lg-6">
+      <div class="card card-stat border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent py-3 border-bottom">
+          <h5 class="fw-bold mb-0"><i class="bi bi-check-all me-2 text-success"></i> Recent Compliance Activity</h5>
+        </div>
+        <div class="card-body p-3">
+          {% for item in recent_compliance_updates %}
+          <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded border-bottom">
+            <div>
+              <div class="fw-bold text-body">{{ item.get_company_display }} &bull; {{ item.get_compliance_type_display }}</div>
+              <div class="small text-muted">Completed by <strong class="text-body">{{ item.completed_by.full_name|default:item.completed_by.username }}</strong> on {{ item.completed_at|date:"M d, H:i" }}</div>
+            </div>
+            <span class="badge badge-completed"><i class="bi bi-check-circle-fill me-1"></i> Done</span>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted">No completed compliance items for this month yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit Today's Task Modal for Employee -->
+  <div class="modal fade" id="editTodayTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-content-custom">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i> Today's Task Entry ({{ today|date:"M d, Y" }})</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form method="post" action="{% url 'reports:daily_task_save' %}">
+          {% csrf_token %}
+          <input type="hidden" name="report_date" value="{{ today_iso }}">
+          {% if today_task %}
+          <input type="hidden" name="task_id" value="{{ today_task.id }}">
+          {% endif %}
+
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Task Description *</label>
+              <textarea name="task_description" class="form-control" rows="4" placeholder="What work did you accomplish today?" required>{% if today_task %}{{ today_task.task_description }}{% endif %}</textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer border-top">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary fw-bold">Save Today's Entry</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

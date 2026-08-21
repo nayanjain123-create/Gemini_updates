@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Report Matrix - Gemini Updates{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-3">
+
+  <!-- Header & Month Controls -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-calendar3-range-fill text-primary me-2"></i> Daily Report Matrix</h2>
+      <p class="text-muted mb-0">Monthly daily work-tracking entries for all active employees</p>
+    </div>
+
+    <!-- Month Navigator Controls -->
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'reports:daily_report_by_month' prev_year prev_month %}" class="btn btn-outline-secondary btn-sm" title="Previous Month">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+
+      <form method="get" action="{% url 'reports:daily_report' %}" class="d-flex align-items-center gap-2">
+        <select name="month" class="form-select form-select-sm" style="min-width: 100px;" onchange="this.form.submit()">
+          {% for m_num, m_name in months_list %}
+          <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+          {% endfor %}
+        </select>
+        <select name="year" class="form-select form-select-sm" style="min-width: 85px;" onchange="this.form.submit()">
+          {% for y in years_list %}
+          <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <a href="{% url 'reports:daily_report_by_month' next_year next_month %}" class="btn btn-outline-secondary btn-sm" title="Next Month">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+
+      {% if selected_month == today.month and selected_year == today.year %}
+      <button type="button" class="btn btn-primary btn-sm fw-bold ms-2" onclick="scrollToTodayColumn()" title="Jump to Today's Column">
+        <i class="bi bi-geo-alt-fill me-1"></i> Today (Aug {{ today.day }})
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Filter Controls Bar -->
+  <div class="card card-stat border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+      <form method="get" class="row g-3 align-items-center">
+        <input type="hidden" name="month" value="{{ selected_month }}">
+        <input type="hidden" name="year" value="{{ selected_year }}">
+
+        <div class="col-12 col-md-5">
+          <label class="form-label small fw-semibold mb-1">Filter Employee</label>
+          <select name="employee" class="form-select form-select-sm">
+            <option value="">All Active Employees</option>
+            {% for emp in all_employees %}
+            <option value="{{ emp.id }}" {% if employee_filter == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.full_name|default:emp.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" name="has_comments" value="1" id="commentsCheck" {% if has_comments == '1' %}checked{% endif %}>
+            <label class="form-check-label small fw-semibold" for="commentsCheck">
+              With Comments Only
+            </label>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4 d-flex gap-2 align-self-end">
+          <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><i class="bi bi-filter me-1"></i> Apply Filter</button>
+          {% if employee_filter or has_comments %}
+          <a href="{% url 'reports:daily_report_by_month' selected_year selected_month %}" class="btn btn-outline-danger btn-sm" title="Clear Filter"><i class="bi bi-x-circle"></i></a>
+          {% endif %}
+          {% if user.is_boss %}
+          <a href="{% url 'reports:missing_daily_reports' %}" class="btn btn-outline-warning btn-sm" title="Missing Reports View">
+            <i class="bi bi-exclamation-triangle"></i>
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table Usage Tip -->
+  <div class="d-flex align-items-center justify-content-between mb-3 small text-muted">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-info-circle text-primary"></i>
+      <span>Click any cell to view full entry text or leave boss comments. <span class="comment-dot"></span> indicates Boss comment present.</span>
+    </div>
+    {% if selected_month == today.month and selected_year == today.year %}
+    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle"><i class="bi bi-calendar-check me-1"></i> Auto-scrolled to Today (Day {{ today.day }})</span>
+    {% endif %}
+  </div>
+
+  <!-- Tabular Monthly Matrix Table Container -->
+  <div class="matrix-container mb-4" id="dailyReportMatrixContainer">
+    <table class="table-matrix">
+      <thead>
+        <tr>
+          <th class="sticky-col">Employee Name</th>
+          {% for day in days_range %}
+          <th id="day-col-{{ day }}" class="{% if day == today.day and selected_month == today.month and selected_year == today.year %}col-today-header bg-primary text-white{% endif %}" style="min-width: 140px;">
+            <div>Day {{ day }} {% if day == today.day and selected_month == today.month and selected_year == today.year %}<span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">TODAY</span>{% endif %}</div>
+            <div class="small fw-normal" style="font-size: 0.7rem;">{{ month_name|slice:":3" }}</div>
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in grid_rows %}
+        <tr>
+          <!-- Employee Name Sticky Column -->
+          <td class="sticky-col {% if row.is_self %}table-active{% endif %}">
+            <div class="fw-bold text-truncate" style="max-width: 190px;" title="{{ row.employee.full_name|default:row.employee.username }}">
+              {{ row.employee.full_name|default:row.employee.username }}
+              {% if row.is_self %}<span class="badge bg-primary ms-1" style="font-size: 0.65rem;">You</span>{% endif %}
+            </div>
+            <div class="small text-muted" style="font-size: 0.75rem;">@{{ row.employee.username }}</div>
+          </td>
+
+          <!-- Day Cells (showing actual task text) -->
+          {% for cell in row.cells %}
+          <td class="cell-interactive text-start align-top p-2 {% if cell.day == today.day and selected_month == today.month and selected_year == today.year %}cell-today-highlight{% endif %}" onclick="openTaskModal('{{ row.employee.id }}', '{{ row.employee.full_name|default:row.employee.username|escapejs }}', '{{ cell.date|date:"Y-m-d" }}', '{{ cell.date|date:"F d, Y" }}', {% if cell.task %}'{{ cell.task.id }}'{% else %}null{% endif %})" title="{% if cell.task %}{{ cell.task.task_description }}{% else %}No update submitted{% endif %}">
+            {% if cell.task %}
+              <div class="d-flex justify-content-between align-items-start gap-1">
+                <div class="small text-body text-truncate" style="max-width: 115px; font-size: 0.825rem;">
+                  {{ cell.task.task_description }}
+                </div>
+                {% if cell.comment_count > 0 %}
+                <span class="comment-dot flex-shrink-0" title="Boss comment attached"></span>
+                {% endif %}
+              </div>
+            {% else %}
+              <span class="text-muted small text-center d-block">—</span>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{{ num_days|add:1 }}" class="text-center py-4 text-muted">No active employees found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- Interactive Task Detail & Edit Modal -->
+<div class="modal fade" id="taskDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content modal-content-custom">
+      
+      <div class="modal-header border-bottom">
+        <div>
+          <h5 class="modal-title fw-bold" id="modalEmployeeName">Employee Task Details</h5>
+          <div class="text-muted small" id="modalReportDate">Date: </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <!-- Loader spinner -->
+        <div id="modalSpinner" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+
+        <!-- Form/Content section -->
+        <div id="modalBodyContent" style="display: none;">
+          <form id="taskSaveForm" method="post" action="{% url 'reports:daily_task_save' %}">
+            {% csrf_token %}
+            <input type="hidden" name="task_id" id="inputTaskId">
+            <input type="hidden" name="employee_id" id="inputEmployeeId">
+            <input type="hidden" name="report_date" id="inputReportDate">
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Task Description *</label>
+              <textarea name="task_description" id="inputTaskDescription" class="form-control" rows="5" required placeholder="Describe daily work done..."></textarea>
+            </div>
+
+            <div id="editableControls" class="d-flex justify-content-end gap-2 mb-4 pb-3 border-bottom">
+              <button type="submit" class="btn btn-primary fw-bold" id="btnSaveTask">
+                <i class="bi bi-check-lg me-1"></i> Save Task Entry
+              </button>
+            </div>
+          </form>
+
+          <!-- Read-only notification if not editable -->
+          <div id="readOnlyNotice" class="alert alert-info py-2 mb-3" style="display: none;">
+            <i class="bi bi-info-circle-fill me-1"></i> You are viewing another employee's daily report in <strong>read-only mode</strong>.
+          </div>
+
+          <!-- Boss Comments Section -->
+          <div class="mt-4">
+            <h6 class="fw-bold mb-3 text-purple"><i class="bi bi-chat-left-text-fill me-2"></i> Boss Comments & Feedback</h6>
+            <div id="commentsList" class="mb-3">
+              <!-- Comments appended dynamically -->
+            </div>
+
+            {% if user.is_boss %}
+            <!-- Boss Comment Form -->
+            <form id="bossCommentForm" method="post" action="">
+              {% csrf_token %}
+              <div class="input-group">
+                <input type="text" name="comment" class="form-control" placeholder="Write a comment as Boss..." required>
+                <button type="submit" class="btn btn-purple text-white fw-bold"><i class="bi bi-send-fill me-1"></i> Add Comment</button>
+              </div>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Not Accessible Popup Modal -->
+<div class="modal fade" id="notAccessibleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content modal-content-custom text-center p-4">
+      <div class="text-warning mb-2">
+        <i class="bi bi-shield-lock-fill display-3"></i>
+      </div>
+      <h4 class="fw-bold text-danger mb-2">Not Accessible</h4>
+      <p class="text-muted small mb-3">You do not have permission to view <strong id="notAccessibleTarget">this employee</strong>'s task details.</p>
+      <button type="button" class="btn btn-secondary btn-sm fw-bold w-100" data-bs-dismiss="modal">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let bsTaskModal;
+  let bsNotAccessibleModal;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    bsTaskModal = new bootstrap.Modal(document.getElementById('taskDetailModal'));
+    bsNotAccessibleModal = new bootstrap.Modal(document.getElementById('notAccessibleModal'));
+  });
+
+  function openTaskModal(employeeId, employeeName, dateStr, dateFormatted, taskId) {
+    const currentUserId = '{{ request.user.id }}';
+    const isBossUser = ('{{ request.user.is_boss }}' === 'True');
+
+    // Access check: Non-boss employee clicking on another employee's cell -> Pop up Not Accessible box
+    if (!isBossUser && currentUserId !== String(employeeId)) {
+      document.getElementById('notAccessibleTarget').textContent = employeeName;
+      bsNotAccessibleModal.show();
+      return;
+    }
+
+    document.getElementById('modalEmployeeName').textContent = employeeName + "'s Daily Task";
+    document.getElementById('modalReportDate').textContent = "Date: " + dateFormatted;
+    
+    document.getElementById('inputEmployeeId').value = employeeId;
+    document.getElementById('inputReportDate').value = dateStr;
+    document.getElementById('inputTaskId').value = taskId || '';
+
+    const modalSpinner = document.getElementById('modalSpinner');
+    const modalBodyContent = document.getElementById('modalBodyContent');
+    const commentsList = document.getElementById('commentsList');
+
+    modalSpinner.style.display = 'block';
+    modalBodyContent.style.display = 'none';
+    commentsList.innerHTML = '';
+
+    bsTaskModal.show();
+
+    if (taskId) {
+      // Fetch details via API
+      fetch('/daily-report/task/' + taskId + '/')
+        .then(res => res.json())
+        .then(data => {
+          modalSpinner.style.display = 'none';
+          modalBodyContent.style.display = 'block';
+
+          document.getElementById('inputTaskDescription').value = data.task_description;
+
+          const isEditable = data.is_editable;
+          const readOnlyNotice = document.getElementById('readOnlyNotice');
+          const btnSaveTask = document.getElementById('btnSaveTask');
+          const taskDescInput = document.getElementById('inputTaskDescription');
+
+          if (!isEditable) {
+            readOnlyNotice.style.display = 'block';
+            btnSaveTask.style.display = 'none';
+            taskDescInput.setAttribute('readonly', 'readonly');
+          } else {
+            readOnlyNotice.style.display = 'none';
+            btnSaveTask.style.display = 'inline-block';
+            taskDescInput.removeAttribute('readonly');
+          }
+
+          // Set boss comment action url
+          const bossCommentForm = document.getElementById('bossCommentForm');
+          if (bossCommentForm) {
+            bossCommentForm.action = '/daily-report/task/' + taskId + '/comment/';
+          }
+
+          // Render comments if authorized
+          if (data.can_view_comments && data.comments && data.comments.length > 0) {
+            data.comments.forEach(c => {
+              const div = document.createElement('div');
+              div.className = 'p-3 mb-2 rounded bg-body-tertiary border';
+              div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <strong class="text-purple"><i class="bi bi-shield-lock-fill me-1"></i> ${c.boss_name} (Boss)</strong>
+                  <span class="small text-muted">${c.created_at}</span>
+                </div>
+                <div class="mb-0 text-break text-body">${c.comment}</div>
+              `;
+              commentsList.appendChild(div);
+            });
+          } else {
+            commentsList.innerHTML = '<div class="small text-muted fst-italic">No boss comments on this task yet.</div>';
+          }
+        });
+    } else {
+      // Empty task entry
+      modalSpinner.style.display = 'none';
+      modalBodyContent.style.display = 'block';
+
+      document.getElementById('inputTaskDescription').value = '';
+      document.getElementById('inputReferenceLink').value = '';
+
+      const isEditable = ('{{ request.user.id }}' === employeeId) || ('{{ request.user.is_boss }}' === 'True');
+      const readOnlyNotice = document.getElementById('readOnlyNotice');
+      const btnSaveTask = document.getElementById('btnSaveTask');
+
+      if (!isEditable) {
+        readOnlyNotice.style.display = 'block';
+        btnSaveTask.style.display = 'none';
+      } else {
+        readOnlyNotice.style.display = 'none';
+        btnSaveTask.style.display = 'inline-block';
+      }
+
+      commentsList.innerHTML = '<div class="small text-muted fst-italic">Save task first to enable comments.</div>';
+    }
+  }
+
+  function scrollToTodayColumn() {
+    const container = document.getElementById('dailyReportMatrixContainer');
+    const todayHeader = document.querySelector('.col-today-header') || document.getElementById('day-col-{{ today.day }}');
+    if (container && todayHeader) {
+      const scrollPos = todayHeader.offsetLeft - (container.clientWidth / 2) + (todayHeader.clientWidth / 2);
+      container.scrollTo({ left: Math.max(0, scrollPos), behavior: 'smooth' });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Auto scroll matrix container to Today's column on load if current month/year matches
+    {% if selected_month == today.month and selected_year == today.year %}
+    setTimeout(function() {
+      scrollToTodayColumn();
+    }, 150);
+    {% endif %}
+  });
+</script>
+{% endblock %}

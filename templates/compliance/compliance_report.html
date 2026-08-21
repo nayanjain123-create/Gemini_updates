@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Compliance Report Matrix - Gemini Updates{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-3">
+
+  <!-- Header & Controls Bar -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-clipboard-check-fill text-primary me-2"></i> Compliance Report Matrix</h2>
+      <p class="text-muted mb-0">Monthly compliance matrix (5 Companies &times; 3 Compliance Types = 15 Monthly Items)</p>
+    </div>
+
+    <!-- Actions & Month Navigator -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <!-- Month Selector -->
+      <a href="{% url 'compliance:compliance_report_by_month' prev_year prev_month %}" class="btn btn-outline-secondary btn-sm" title="Previous Month">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+
+      <form method="get" action="{% url 'compliance:compliance_report' %}" class="d-flex align-items-center gap-2">
+        <select name="month" class="form-select form-select-sm" style="min-width: 100px;" onchange="this.form.submit()">
+          {% for m_num, m_name in months_list %}
+          <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+          {% endfor %}
+        </select>
+        <select name="year" class="form-select form-select-sm" style="min-width: 85px;" onchange="this.form.submit()">
+          {% for y in years_list %}
+          <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <a href="{% url 'compliance:compliance_report_by_month' next_year next_month %}" class="btn btn-outline-secondary btn-sm" title="Next Month">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="card card-stat border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+      <form method="get" class="row g-3 align-items-center">
+        <input type="hidden" name="month" value="{{ selected_month }}">
+        <input type="hidden" name="year" value="{{ selected_year }}">
+
+        <div class="col-12 col-sm-6 col-md-3">
+          <select name="company" class="form-select form-select-sm">
+            <option value="">All Companies</option>
+            {% for code, label in company_choices %}
+            <option value="{{ code }}" {% if company_filter == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-3">
+          <select name="compliance_type" class="form-select form-select-sm">
+            <option value="">All Compliance Types</option>
+            {% for code, label in type_choices %}
+            <option value="{{ code }}" {% if type_filter == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-3">
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All Statuses</option>
+            <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending Only</option>
+            <option value="DONE" {% if status_filter == 'DONE' %}selected{% endif %}>Done Only</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><i class="bi bi-funnel-fill me-1"></i> Filter</button>
+          {% if company_filter or type_filter or status_filter %}
+          <a href="{% url 'compliance:compliance_report_by_month' selected_year selected_month %}" class="btn btn-outline-danger btn-sm" title="Clear Filters"><i class="bi bi-x-circle"></i></a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Compliance Matrix Table Container -->
+  <div class="matrix-container mb-4">
+    <table class="table-matrix compliance-matrix">
+      <thead>
+        <tr>
+          <th class="sticky-col" style="min-width: 180px;">Company Name</th>
+          {% for code, label in type_choices %}
+          <th style="min-width: 250px;">
+            <div class="fs-6 fw-bold">{{ label }}</div>
+            <div class="small text-muted font-normal" style="font-size: 0.75rem;">Compliance Item</div>
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in matrix_rows %}
+        <tr>
+          <!-- Company Name -->
+          <td class="sticky-col fw-bold">
+            <div class="fs-6">{{ row.company_label }}</div>
+            <div class="small text-muted" style="font-size: 0.75rem;">Company Code: {{ row.company_code }}</div>
+          </td>
+
+          <!-- Compliance Cells -->
+          {% for cell in row.cells %}
+          <td class="align-middle p-3" style="text-align: left;">
+            {% if cell.item %}
+              {% if cell.item.status == 'DONE' %}
+                <!-- Done Status Cell -->
+                <div class="p-2 rounded border bg-success bg-opacity-10 border-success border-opacity-25 cell-interactive" onclick="openComplianceModal('{{ cell.item.id }}')">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge badge-completed"><i class="bi bi-check-circle-fill me-1"></i> DONE</span>
+                    {% if cell.item.comments.count > 0 %}
+                    <span class="badge bg-purple text-white"><i class="bi bi-chat-text-fill"></i> {{ cell.item.comments.count }}</span>
+                    {% endif %}
+                  </div>
+                  <div class="fw-bold small text-success mt-1"><i class="bi bi-person-fill me-1"></i> {{ cell.item.completed_by.full_name|default:cell.item.completed_by.username }}</div>
+                  <div class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i> {{ cell.item.completed_at|date:"M d, Y H:i" }}</div>
+                  {% if cell.item.reference_number %}
+                  <div class="small text-truncate mt-1 text-body" style="font-size: 0.75rem;"><strong>Ref:</strong> {{ cell.item.reference_number }}</div>
+                  {% endif %}
+                </div>
+              {% else %}
+                <!-- Pending Status Cell -->
+                <div class="p-2 rounded border bg-warning bg-opacity-10 border-warning border-opacity-25 cell-interactive" onclick="openComplianceModal('{{ cell.item.id }}')">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge badge-pending"><i class="bi bi-clock-history me-1"></i> PENDING</span>
+                    {% if cell.item.comments.count > 0 %}
+                    <span class="badge bg-purple text-white"><i class="bi bi-chat-text-fill"></i> {{ cell.item.comments.count }}</span>
+                    {% endif %}
+                  </div>
+                  <button type="button" class="btn btn-warning btn-sm w-100 fw-bold shadow-sm" onclick="event.stopPropagation(); triggerMarkDone('{{ cell.item.id }}', '{{ row.company_label|escapejs }}', '{{ cell.type_label|escapejs }}');">
+                    <i class="bi bi-check2-circle me-1"></i> Mark as Done
+                  </button>
+                </div>
+              {% endif %}
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- Compliance Item Details Modal -->
+<div class="modal fade" id="complianceDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content modal-content-custom">
+      <div class="modal-header border-bottom">
+        <div>
+          <h5 class="modal-title fw-bold" id="compModalTitle">Compliance Item Details</h5>
+          <div class="text-muted small" id="compModalSub"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <!-- Spinner -->
+        <div id="compSpinner" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+
+        <div id="compModalContent" style="display: none;">
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6">
+              <div class="p-3 rounded bg-body-tertiary border">
+                <div class="text-muted small uppercase fw-bold">Status</div>
+                <div id="compStatusBadge" class="mt-1"></div>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <div class="p-3 rounded bg-body-tertiary border">
+                <div class="text-muted small uppercase fw-bold">Completed By & Timestamp</div>
+                <div id="compCompletedBy" class="fw-bold mt-1">—</div>
+                <div id="compCompletedAt" class="small text-muted"></div>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <div class="p-3 rounded bg-body-tertiary border">
+                <div class="text-muted small uppercase fw-bold">Reference / Challan Number</div>
+                <div id="compRefNo" class="fw-semibold mt-1">—</div>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <div class="p-3 rounded bg-body-tertiary border">
+                <div class="text-muted small uppercase fw-bold">Document URL</div>
+                <div id="compDocUrl" class="mt-1">—</div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="p-3 rounded bg-body-tertiary border">
+                <div class="text-muted small uppercase fw-bold">Remarks</div>
+                <div id="compRemarks" class="mt-1">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Boss Comments Section -->
+          <div class="mt-4">
+            <h6 class="fw-bold mb-3 text-purple"><i class="bi bi-chat-left-text-fill me-2"></i> Boss Comments</h6>
+            <div id="compCommentsList" class="mb-3"></div>
+
+            {% if user.is_boss %}
+            <form id="compBossCommentForm" method="post" action="">
+              {% csrf_token %}
+              <div class="input-group">
+                <input type="text" name="comment" class="form-control" placeholder="Write a boss comment for this compliance item..." required>
+                <button type="submit" class="btn btn-purple text-white fw-bold"><i class="bi bi-send-fill me-1"></i> Add Comment</button>
+              </div>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation / Mark Done Modal -->
+<div class="modal fade" id="markDoneModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-content-custom">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title fw-bold"><i class="bi bi-check2-circle text-success me-2"></i> Confirm Mark as Done</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="markDoneForm" method="post" action="">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="alert alert-warning py-2 mb-3">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>Important:</strong> Once marked Done, this item becomes immutable and cannot be reverted back to Pending.
+          </div>
+
+          <p class="mb-3">You are marking <strong id="markDoneTarget"></strong> as <strong>DONE</strong>.</p>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Reference Number / Challan # (Optional)</label>
+            <input type="text" name="reference_number" class="form-control" placeholder="e.g. Challan # / Ack Code">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Completion Remarks (Optional)</label>
+            <textarea name="remarks" class="form-control" rows="3" placeholder="Add optional notes..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Document URL / Link (Optional)</label>
+            <input type="url" name="document_link" class="form-control" placeholder="https://...">
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success fw-bold px-4">
+            <i class="bi bi-check-lg me-1"></i> Confirm & Mark Done
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let bsCompDetailModal;
+  let bsMarkDoneModal;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    bsCompDetailModal = new bootstrap.Modal(document.getElementById('complianceDetailModal'));
+    bsMarkDoneModal = new bootstrap.Modal(document.getElementById('markDoneModal'));
+  });
+
+  function openComplianceModal(itemId) {
+    const compSpinner = document.getElementById('compSpinner');
+    const compModalContent = document.getElementById('compModalContent');
+    const commentsList = document.getElementById('compCommentsList');
+
+    compSpinner.style.display = 'block';
+    compModalContent.style.display = 'none';
+    commentsList.innerHTML = '';
+
+    bsCompDetailModal.show();
+
+    fetch('/compliance/' + itemId + '/')
+      .then(res => res.json())
+      .then(data => {
+        compSpinner.style.display = 'none';
+        compModalContent.style.display = 'block';
+
+        document.getElementById('compModalTitle').textContent = data.company_display + " — " + data.type_display;
+        document.getElementById('compModalSub').textContent = "Month: " + data.month_year;
+
+        const badgeDiv = document.getElementById('compStatusBadge');
+        if (data.status === 'DONE') {
+          badgeDiv.innerHTML = '<span class="badge badge-completed fs-6"><i class="bi bi-check-circle-fill me-1"></i> DONE</span>';
+        } else {
+          badgeDiv.innerHTML = '<span class="badge badge-pending fs-6"><i class="bi bi-clock-history me-1"></i> PENDING</span>';
+        }
+
+        document.getElementById('compCompletedBy').textContent = data.completed_by_name || '—';
+        document.getElementById('compCompletedAt').textContent = data.completed_at_formatted || '';
+        document.getElementById('compRefNo').textContent = data.reference_number || '—';
+        document.getElementById('compRemarks').textContent = data.remarks || '—';
+        
+        const docUrlDiv = document.getElementById('compDocUrl');
+        if (data.document_link) {
+          docUrlDiv.innerHTML = `<a href="${data.document_link}" target="_blank" class="text-primary"><i class="bi bi-link-45deg me-1"></i> ${data.document_link}</a>`;
+        } else {
+          docUrlDiv.textContent = '—';
+        }
+
+        const compBossCommentForm = document.getElementById('compBossCommentForm');
+        if (compBossCommentForm) {
+          compBossCommentForm.action = '/compliance/' + itemId + '/comment/';
+        }
+
+        if (data.comments && data.comments.length > 0) {
+          data.comments.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'p-3 mb-2 rounded bg-body-tertiary border';
+            div.innerHTML = `
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong class="text-purple"><i class="bi bi-shield-lock-fill me-1"></i> ${c.boss_name} (Boss)</strong>
+                <span class="small text-muted">${c.created_at}</span>
+              </div>
+              <div class="mb-0 text-break">${c.comment}</div>
+            `;
+            commentsList.appendChild(div);
+          });
+        } else {
+          commentsList.innerHTML = '<div class="small text-muted fst-italic">No boss comments on this compliance item yet.</div>';
+        }
+      });
+  }
+
+  function triggerMarkDone(itemId, companyName, typeName) {
+    document.getElementById('markDoneTarget').textContent = companyName + " (" + typeName + ")";
+    document.getElementById('markDoneForm').action = '/compliance/' + itemId + '/mark-done/';
+    bsMarkDoneModal.show();
+  }
+</script>
+{% endblock %}
