@@ -36,13 +36,15 @@ class Command(BaseCommand):
 
         # 2. Create Employee Accounts
         employees_data = [
-            {'username': 'emp1', 'email': 'emp1@gemini.com', 'full_name': 'Alice Johnson', 'phone': '+1-555-0101'},
-            {'username': 'emp2', 'email': 'emp2@gemini.com', 'full_name': 'Bob Smith', 'phone': '+1-555-0102'},
-            {'username': 'emp3', 'email': 'emp3@gemini.com', 'full_name': 'Charlie Brown', 'phone': '+1-555-0103'},
+            {'username': 'pratik', 'email': 'pratik@gemini.com', 'full_name': 'Pratik', 'phone': '+1-555-0100', 'password': 'pratik123'},
+            {'username': 'emp1', 'email': 'emp1@gemini.com', 'full_name': 'Alice Johnson', 'phone': '+1-555-0101', 'password': 'emp123'},
+            {'username': 'emp2', 'email': 'emp2@gemini.com', 'full_name': 'Bob Smith', 'phone': '+1-555-0102', 'password': 'emp123'},
+            {'username': 'emp3', 'email': 'emp3@gemini.com', 'full_name': 'Charlie Brown', 'phone': '+1-555-0103', 'password': 'emp123'},
         ]
 
         created_employees = []
         for emp_info in employees_data:
+            pwd = emp_info.get('password', 'emp123')
             emp, created = User.objects.get_or_create(
                 username=emp_info['username'],
                 defaults={
@@ -52,10 +54,12 @@ class Command(BaseCommand):
                     'phone_number': emp_info['phone']
                 }
             )
+            emp.set_password(pwd)
+            emp.save()
             if created:
-                emp.set_password('emp123')
-                emp.save()
-                self.stdout.write(self.style.SUCCESS(f"Created Employee: {emp_info['email']} / emp123"))
+                self.stdout.write(self.style.SUCCESS(f"Created Employee: {emp_info['username']} / {pwd}"))
+            else:
+                self.stdout.write(self.style.SUCCESS(f"Updated Employee password for: {emp_info['username']}"))
             created_employees.append(emp)
 
         # 3. Create Compliance Items for current month
