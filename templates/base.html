@@ -51,32 +51,32 @@
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
           <li class="nav-item">
             <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
-              <i class="bi bi-grid-1x2-fill me-1"></i> Dashboard
+              Dashboard
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'reports' and request.resolver_match.url_name == 'daily_report' %}active{% endif %}" href="{% url 'reports:daily_report' %}">
-              <i class="bi bi-calendar3-range-fill me-1"></i> Daily Report
+              Daily
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'compliance' %}active{% endif %}" href="{% url 'compliance:compliance_report' %}">
-              <i class="bi bi-clipboard-check-fill me-1"></i> Compliance Report
+              Compliance
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'task_list' or request.resolver_match.url_name == 'task_create' %}active{% endif %}" href="{% url 'reports:task_list' %}">
-              <i class="bi bi-list-check me-1"></i> Tasks
+              Tasks
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link nav-link-custom text-success fw-semibold" href="https://gemini-sales-invoice-converter.vercel.app/" target="_blank" rel="noopener noreferrer" title="Sales Invoice Converter Tool">
-              <i class="bi bi-graph-up-arrow me-1"></i> Sales
+              Sales
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link nav-link-custom text-info fw-semibold" href="https://geminiexcel.streamlit.app/" target="_blank" rel="noopener noreferrer" title="Purchase Excel Tool">
-              <i class="bi bi-bag-check-fill me-1"></i> Purchase
+              Purchase
             </a>
           </li>
         </ul>
