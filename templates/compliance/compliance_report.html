@@ -5,11 +5,52 @@
 {% block content %}
 <div class="container-fluid my-3">
 
-  <!-- Header & Controls Bar -->
+  <!-- Urgent Today Last Date Alerts -->
+  {% if is_tds_due_today %}
+  <div class="alert alert-danger d-flex align-items-center shadow-sm mb-4 border-danger fw-bold fs-6" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+    <div>
+      <span class="badge bg-danger me-2">URGENT DUE ALERT</span>
+      Today ({{ tds_due_date|date:"F d, Y" }}) is the <strong>LAST DATE</strong> for <strong>TDS Payment</strong> compliance!
+    </div>
+  </div>
+  {% endif %}
+
+  {% if is_gstr1_due_today %}
+  <div class="alert alert-danger d-flex align-items-center shadow-sm mb-4 border-danger fw-bold fs-6" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+    <div>
+      <span class="badge bg-danger me-2">URGENT DUE ALERT</span>
+      Today ({{ gstr1_due_date|date:"F d, Y" }}) is the <strong>LAST DATE</strong> for <strong>GSTR-1</strong> compliance!
+    </div>
+  </div>
+  {% endif %}
+
+  {% if is_gstr3b_due_today %}
+  <div class="alert alert-danger d-flex align-items-center shadow-sm mb-4 border-danger fw-bold fs-6" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+    <div>
+      <span class="badge bg-danger me-2">URGENT DUE ALERT</span>
+      Today ({{ gstr3b_due_date|date:"F d, Y" }}) is the <strong>LAST DATE</strong> for <strong>GSTR-3B</strong> compliance!
+    </div>
+  </div>
+  {% endif %}
+
+  {% if is_tds_qtr_due_today %}
+  <div class="alert alert-danger d-flex align-items-center shadow-sm mb-4 border-danger fw-bold fs-6" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+    <div>
+      <span class="badge bg-danger me-2">URGENT DUE ALERT</span>
+      Today ({{ tds_qtr_due_date|date:"F d, Y" }}) is the <strong>LAST DATE</strong> for <strong>{{ qtr_label }}</strong> compliance!
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Top Header & Actions -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-clipboard-check-fill text-primary me-2"></i> Compliance Report Matrix</h2>
-      <p class="text-muted mb-0">Monthly compliance matrix (5 Companies &times; 3 Compliance Types = 15 Monthly Items)</p>
+      <h2 class="fw-bold mb-1"><i class="bi bi-clipboard-check-fill text-primary me-2"></i> Compliance Report</h2>
+      <p class="text-muted mb-0">Monthly compliance status for companies (Viewing: <strong>{{ month_name }} {{ selected_year }}</strong> compliance)</p>
     </div>
 
     <!-- Actions & Month Navigator -->
@@ -38,49 +79,6 @@
     </div>
   </div>
 
-  <!-- Filter Bar -->
-  <div class="card card-stat border-0 shadow-sm mb-4">
-    <div class="card-body p-3">
-      <form method="get" class="row g-3 align-items-center">
-        <input type="hidden" name="month" value="{{ selected_month }}">
-        <input type="hidden" name="year" value="{{ selected_year }}">
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <select name="company" class="form-select form-select-sm">
-            <option value="">All Companies</option>
-            {% for code, label in company_choices %}
-            <option value="{{ code }}" {% if company_filter == code %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <select name="compliance_type" class="form-select form-select-sm">
-            <option value="">All Compliance Types</option>
-            {% for code, label in type_choices %}
-            <option value="{{ code }}" {% if type_filter == code %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <select name="status" class="form-select form-select-sm">
-            <option value="">All Statuses</option>
-            <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending Only</option>
-            <option value="DONE" {% if status_filter == 'DONE' %}selected{% endif %}>Done Only</option>
-          </select>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
-          <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><i class="bi bi-funnel-fill me-1"></i> Filter</button>
-          {% if company_filter or type_filter or status_filter %}
-          <a href="{% url 'compliance:compliance_report_by_month' selected_year selected_month %}" class="btn btn-outline-danger btn-sm" title="Clear Filters"><i class="bi bi-x-circle"></i></a>
-          {% endif %}
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- Compliance Matrix Table Container -->
   <div class="matrix-container mb-4">
     <table class="table-matrix compliance-matrix">
@@ -90,7 +88,23 @@
           {% for code, label in type_choices %}
           <th style="min-width: 250px;">
             <div class="fs-6 fw-bold">{{ label }}</div>
+            {% if code == 'TDS_PAYMENT' %}
+            <div class="badge bg-primary text-white mt-1" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i> Due: 7th {{ due_month_name }}</div>
+            {% elif code == 'GSTR_1' %}
+            <div class="badge bg-primary text-white mt-1" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i> Due: 11th {{ due_month_name }}</div>
+            {% elif code == 'GSTR_3B' %}
+            <div class="badge bg-primary text-white mt-1" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i> Due: 28th {{ due_month_name }}</div>
+            {% elif code == 'TDS_RETURN_Q1' %}
+            <div class="badge bg-primary text-white mt-1" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i> Due: 31st July</div>
+            {% elif code == 'TDS_RETURN_Q2' %}
+            <div class="badge bg-primary text-white mt-1" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i> Due: 31st Oct</div>
+            {% elif code == 'TDS_RETURN_Q3' %}
+            <div class="badge bg-primary text-white mt-1" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i> Due: 31st Jan</div>
+            {% elif code == 'TDS_RETURN_Q4' %}
+            <div class="badge bg-primary text-white mt-1" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i> Due: 30th Apr</div>
+            {% else %}
             <div class="small text-muted font-normal" style="font-size: 0.75rem;">Compliance Item</div>
+            {% endif %}
           </th>
           {% endfor %}
         </tr>
@@ -119,22 +133,46 @@
                   </div>
                   <div class="fw-bold small text-success mt-1"><i class="bi bi-person-fill me-1"></i> {{ cell.item.completed_by.full_name|default:cell.item.completed_by.username }}</div>
                   <div class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i> {{ cell.item.completed_at|date:"M d, Y H:i" }}</div>
-                  {% if cell.item.reference_number %}
-                  <div class="small text-truncate mt-1 text-body" style="font-size: 0.75rem;"><strong>Ref:</strong> {{ cell.item.reference_number }}</div>
+                  {% if cell.item.remarks %}
+                  <div class="small text-truncate mt-1 text-body" style="font-size: 0.75rem;"><strong>Remarks:</strong> {{ cell.item.remarks }}</div>
+                  {% endif %}
+                </div>
+              {% elif cell.item.status == 'NOT_APPLICABLE' %}
+                <!-- N/A Status Cell (Light Blue) -->
+                <div class="p-2 rounded border bg-info bg-opacity-10 border-info border-opacity-25 cell-interactive" onclick="handleNaCellClick('{{ cell.item.id }}', {% if user.is_boss or user.is_helper %}true{% else %}false{% endif %})">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-info text-dark fw-bold"><i class="bi bi-slash-circle me-1"></i> N/A</span>
+                    {% if cell.item.comments.count > 0 %}
+                    <span class="badge bg-purple text-white"><i class="bi bi-chat-text-fill"></i> {{ cell.item.comments.count }}</span>
+                    {% endif %}
+                  </div>
+                  <div class="fw-bold small text-info mt-1"><i class="bi bi-person-fill me-1"></i> {{ cell.item.completed_by.full_name|default:cell.item.completed_by.username }}</div>
+                  <div class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i> {{ cell.item.completed_at|date:"M d, Y H:i" }}</div>
+                  {% if cell.item.remarks %}
+                  <div class="small text-truncate mt-1 text-body" style="font-size: 0.75rem;"><strong>Remarks:</strong> {{ cell.item.remarks }}</div>
                   {% endif %}
                 </div>
               {% else %}
                 <!-- Pending Status Cell -->
                 <div class="p-2 rounded border bg-warning bg-opacity-10 border-warning border-opacity-25 cell-interactive" onclick="openComplianceModal('{{ cell.item.id }}')">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="d-flex justify-content-between align-items-center {% if not user.is_boss %}mb-2{% endif %}">
                     <span class="badge badge-pending"><i class="bi bi-clock-history me-1"></i> PENDING</span>
                     {% if cell.item.comments.count > 0 %}
                     <span class="badge bg-purple text-white"><i class="bi bi-chat-text-fill"></i> {{ cell.item.comments.count }}</span>
                     {% endif %}
                   </div>
-                  <button type="button" class="btn btn-warning btn-sm w-100 fw-bold shadow-sm" onclick="event.stopPropagation(); triggerMarkDone('{{ cell.item.id }}', '{{ row.company_label|escapejs }}', '{{ cell.type_label|escapejs }}');">
-                    <i class="bi bi-check2-circle me-1"></i> Mark as Done
-                  </button>
+                  {% if not user.is_boss %}
+                  <div class="d-flex flex-column gap-1">
+                    <button type="button" class="btn btn-warning btn-sm w-100 fw-bold shadow-sm" onclick="event.stopPropagation(); triggerMarkDone('{{ cell.item.id }}', '{{ row.company_label|escapejs }}', '{{ cell.type_label|escapejs }}');">
+                      <i class="bi bi-check2-circle me-1"></i> Mark as Done
+                    </button>
+                    {% if user.is_helper %}
+                    <button type="button" class="btn btn-info btn-sm w-100 fw-bold text-dark shadow-sm" onclick="event.stopPropagation(); triggerMarkNa('{{ cell.item.id }}', '{{ row.company_label|escapejs }}', '{{ cell.type_label|escapejs }}');">
+                      <i class="bi bi-slash-circle me-1"></i> Mark as N/A
+                    </button>
+                    {% endif %}
+                  </div>
+                  {% endif %}
                 </div>
               {% endif %}
             {% else %}
@@ -184,20 +222,6 @@
                 <div class="text-muted small uppercase fw-bold">Completed By & Timestamp</div>
                 <div id="compCompletedBy" class="fw-bold mt-1">—</div>
                 <div id="compCompletedAt" class="small text-muted"></div>
-              </div>
-            </div>
-
-            <div class="col-12 col-sm-6">
-              <div class="p-3 rounded bg-body-tertiary border">
-                <div class="text-muted small uppercase fw-bold">Reference / Challan Number</div>
-                <div id="compRefNo" class="fw-semibold mt-1">—</div>
-              </div>
-            </div>
-
-            <div class="col-12 col-sm-6">
-              <div class="p-3 rounded bg-body-tertiary border">
-                <div class="text-muted small uppercase fw-bold">Document URL</div>
-                <div id="compDocUrl" class="mt-1">—</div>
               </div>
             </div>
 
@@ -252,18 +276,8 @@
           <p class="mb-3">You are marking <strong id="markDoneTarget"></strong> as <strong>DONE</strong>.</p>
 
           <div class="mb-3">
-            <label class="form-label fw-semibold">Reference Number / Challan # (Optional)</label>
-            <input type="text" name="reference_number" class="form-control" placeholder="e.g. Challan # / Ack Code">
-          </div>
-
-          <div class="mb-3">
             <label class="form-label fw-semibold">Completion Remarks (Optional)</label>
-            <textarea name="remarks" class="form-control" rows="3" placeholder="Add optional notes..."></textarea>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Document URL / Link (Optional)</label>
-            <input type="url" name="document_link" class="form-control" placeholder="https://...">
+            <textarea name="remarks" class="form-control" rows="3" placeholder="Add optional completion notes or remarks..."></textarea>
           </div>
         </div>
         <div class="modal-footer border-top">
@@ -276,17 +290,78 @@
     </div>
   </div>
 </div>
+
+<!-- Confirmation / Mark N/A Modal -->
+<div class="modal fade" id="markNaModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-content-custom">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title fw-bold"><i class="bi bi-slash-circle text-info me-2"></i> Confirm Mark as N/A</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="markNaForm" method="post" action="">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <div class="alert alert-info py-2 mb-3">
+            <i class="bi bi-info-circle-fill me-1"></i> <strong>Note:</strong> You are marking this compliance item as Not Applicable (N/A).
+          </div>
+
+          <p class="mb-3">You are marking <strong id="markNaTarget"></strong> as <strong>N/A</strong>.</p>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Reason / Remarks (Optional)</label>
+            <textarea name="remarks" class="form-control" rows="3" placeholder="Add optional remarks explaining why this compliance is N/A..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-info text-dark fw-bold px-4">
+            <i class="bi bi-check-lg me-1"></i> Confirm & Mark N/A
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Standard Employee N/A Info Modal -->
+<div class="modal fade" id="naInfoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-content-custom text-center p-4">
+      <div class="mb-3">
+        <i class="bi bi-slash-circle text-info display-1"></i>
+      </div>
+      <h4 class="fw-bold mb-2">Compliance Not Applicable</h4>
+      <p class="text-muted mb-4">This compliance item has been marked as <strong>Not Applicable (N/A)</strong>.</p>
+      <div>
+        <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
   let bsCompDetailModal;
   let bsMarkDoneModal;
+  let bsMarkNaModal;
+  let bsNaInfoModal;
 
   document.addEventListener('DOMContentLoaded', function() {
     bsCompDetailModal = new bootstrap.Modal(document.getElementById('complianceDetailModal'));
     bsMarkDoneModal = new bootstrap.Modal(document.getElementById('markDoneModal'));
+    bsMarkNaModal = new bootstrap.Modal(document.getElementById('markNaModal'));
+    bsNaInfoModal = new bootstrap.Modal(document.getElementById('naInfoModal'));
   });
+
+  function handleNaCellClick(itemId, canViewModal) {
+    if (canViewModal) {
+      openComplianceModal(itemId);
+    } else {
+      bsNaInfoModal.show();
+    }
+  }
 
   function openComplianceModal(itemId) {
     const compSpinner = document.getElementById('compSpinner');
@@ -311,21 +386,15 @@
         const badgeDiv = document.getElementById('compStatusBadge');
         if (data.status === 'DONE') {
           badgeDiv.innerHTML = '<span class="badge badge-completed fs-6"><i class="bi bi-check-circle-fill me-1"></i> DONE</span>';
+        } else if (data.status === 'NOT_APPLICABLE') {
+          badgeDiv.innerHTML = '<span class="badge bg-info text-dark fs-6"><i class="bi bi-slash-circle me-1"></i> N/A</span>';
         } else {
           badgeDiv.innerHTML = '<span class="badge badge-pending fs-6"><i class="bi bi-clock-history me-1"></i> PENDING</span>';
         }
 
-        document.getElementById('compCompletedBy').textContent = data.completed_by_name || '—';
-        document.getElementById('compCompletedAt').textContent = data.completed_at_formatted || '';
-        document.getElementById('compRefNo').textContent = data.reference_number || '—';
-        document.getElementById('compRemarks').textContent = data.remarks || '—';
-        
-        const docUrlDiv = document.getElementById('compDocUrl');
-        if (data.document_link) {
-          docUrlDiv.innerHTML = `<a href="${data.document_link}" target="_blank" class="text-primary"><i class="bi bi-link-45deg me-1"></i> ${data.document_link}</a>`;
-        } else {
-          docUrlDiv.textContent = '—';
-        }
+        if (document.getElementById('compCompletedBy')) document.getElementById('compCompletedBy').textContent = data.completed_by_name || '—';
+        if (document.getElementById('compCompletedAt')) document.getElementById('compCompletedAt').textContent = data.completed_at_formatted || '';
+        if (document.getElementById('compRemarks')) document.getElementById('compRemarks').textContent = data.remarks || '—';
 
         const compBossCommentForm = document.getElementById('compBossCommentForm');
         if (compBossCommentForm) {
@@ -355,6 +424,12 @@
     document.getElementById('markDoneTarget').textContent = companyName + " (" + typeName + ")";
     document.getElementById('markDoneForm').action = '/compliance/' + itemId + '/mark-done/';
     bsMarkDoneModal.show();
+  }
+
+  function triggerMarkNa(itemId, companyName, typeName) {
+    document.getElementById('markNaTarget').textContent = companyName + " (" + typeName + ")";
+    document.getElementById('markNaForm').action = '/compliance/' + itemId + '/mark-na/';
+    bsMarkNaModal.show();
   }
 </script>
 {% endblock %}

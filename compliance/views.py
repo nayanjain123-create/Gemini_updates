@@ -16,9 +16,18 @@ from .models import ComplianceItem, ComplianceComment
 from .forms import ComplianceMarkDoneForm, ComplianceCommentForm
 
 def ensure_compliance_items_exist(year, month):
-    """Ensure all 15 compliance items (5 companies x 3 types) exist for given month/year."""
+    """Ensure all compliance items exist for given month/year."""
     companies = [c[0] for c in ComplianceItem.COMPANY_CHOICES]
-    types = [t[0] for t in ComplianceItem.COMPLIANCE_TYPE_CHOICES]
+    types = [ComplianceItem.TDS_PAYMENT, ComplianceItem.GSTR_1, ComplianceItem.GSTR_3B]
+    
+    if month == 6:
+        types.append(ComplianceItem.TDS_RETURN_Q1)
+    elif month == 9:
+        types.append(ComplianceItem.TDS_RETURN_Q2)
+    elif month == 12:
+        types.append(ComplianceItem.TDS_RETURN_Q3)
+    elif month == 3:
+        types.append(ComplianceItem.TDS_RETURN_Q4)
     
     created_count = 0
     for company in companies:
@@ -38,13 +47,29 @@ def ensure_compliance_items_exist(year, month):
 def compliance_report_view(request, year=None, month=None):
     today = timezone.now().date()
     
-    selected_year = int(year) if year else today.year
-    selected_month = int(month) if month else today.month
+    req_year = request.GET.get('year')
+    req_month = request.GET.get('month')
+
+    if year:
+        selected_year = int(year)
+    elif req_year:
+        selected_year = int(req_year)
+    else:
+        # Default to previous month's year if current month is January
+        selected_year = today.year - 1 if today.month == 1 else today.year
+
+    if month:
+        selected_month = int(month)
+    elif req_month:
+        selected_month = int(req_month)
+    else:
+        # Default to previous month (e.g., July when current month is August)
+        selected_month = 12 if today.month == 1 else today.month - 1
 
     # Auto-generate items for selected month if missing
     ensure_compliance_items_exist(selected_year, selected_month)
 
-    # Calculate prev/next month
+    # Calculate prev/next month for navigation
     if selected_month == 1:
         prev_month, prev_year = 12, selected_year - 1
     else:
@@ -54,6 +79,54 @@ def compliance_report_view(request, year=None, month=None):
         next_month, next_year = 1, selected_year + 1
     else:
         next_month, next_year = selected_month + 1, selected_year
+
+    # Calculate compliance due dates (due in following month)
+    if selected_month == 12:
+        due_month = 1
+        due_year = selected_year + 1
+    else:
+        due_month = selected_month + 1
+        due_year = selected_year
+
+    from datetime import date
+    tds_due_date = date(due_year, due_month, 7)
+    gstr1_due_date = date(due_year, due_month, 11)
+    gstr3b_due_date = date(due_year, due_month, 28)
+
+    is_tds_due_today = (today == tds_due_date)
+    is_gstr1_due_today = (today == gstr1_due_date)
+    is_gstr3b_due_today = (today == gstr3b_due_date)
+
+    # Active compliance types for matrix display
+    active_type_choices = [
+        (ComplianceItem.TDS_PAYMENT, 'TDS Payment'),
+        (ComplianceItem.GSTR_1, 'GSTR-1'),
+        (ComplianceItem.GSTR_3B, 'GSTR-3B'),
+    ]
+    tds_qtr_due_date = None
+    is_tds_qtr_due_today = False
+    qtr_label = None
+
+    if selected_month == 6:
+        active_type_choices.append((ComplianceItem.TDS_RETURN_Q1, 'TDS Return Q1'))
+        tds_qtr_due_date = date(selected_year, 7, 31)
+        is_tds_qtr_due_today = (today == tds_qtr_due_date)
+        qtr_label = 'TDS Return Q1'
+    elif selected_month == 9:
+        active_type_choices.append((ComplianceItem.TDS_RETURN_Q2, 'TDS Return Q2'))
+        tds_qtr_due_date = date(selected_year, 10, 31)
+        is_tds_qtr_due_today = (today == tds_qtr_due_date)
+        qtr_label = 'TDS Return Q2'
+    elif selected_month == 12:
+        active_type_choices.append((ComplianceItem.TDS_RETURN_Q3, 'TDS Return Q3'))
+        tds_qtr_due_date = date(selected_year + 1, 1, 31)
+        is_tds_qtr_due_today = (today == tds_qtr_due_date)
+        qtr_label = 'TDS Return Q3'
+    elif selected_month == 3:
+        active_type_choices.append((ComplianceItem.TDS_RETURN_Q4, 'TDS Return Q4'))
+        tds_qtr_due_date = date(selected_year, 4, 30)
+        is_tds_qtr_due_today = (today == tds_qtr_due_date)
+        qtr_label = 'TDS Return Q4'
 
     # Query all compliance items for month
     items_qs = ComplianceItem.objects.filter(
@@ -88,7 +161,7 @@ def compliance_report_view(request, year=None, month=None):
         pending_by_company[company_label] = count
 
     pending_by_type = {}
-    for type_code, type_label in ComplianceItem.COMPLIANCE_TYPE_CHOICES:
+    for type_code, type_label in active_type_choices:
         count = items_qs.filter(compliance_type=type_code, status=ComplianceItem.PENDING).count()
         pending_by_type[type_label] = count
 
@@ -100,7 +173,7 @@ def compliance_report_view(request, year=None, month=None):
     matrix_rows = []
     for company_code, company_label in ComplianceItem.COMPANY_CHOICES:
         cells = []
-        for type_code, type_label in ComplianceItem.COMPLIANCE_TYPE_CHOICES:
+        for type_code, type_label in active_type_choices:
             item = matrix_map.get((company_code, type_code))
             cells.append({
                 'type_code': type_code,
@@ -119,6 +192,17 @@ def compliance_report_view(request, year=None, month=None):
         'selected_year': selected_year,
         'selected_month': selected_month,
         'month_name': calendar.month_name[selected_month],
+        'due_month_name': calendar.month_name[due_month],
+        'due_year': due_year,
+        'tds_due_date': tds_due_date,
+        'gstr1_due_date': gstr1_due_date,
+        'gstr3b_due_date': gstr3b_due_date,
+        'tds_qtr_due_date': tds_qtr_due_date,
+        'is_tds_due_today': is_tds_due_today,
+        'is_gstr1_due_today': is_gstr1_due_today,
+        'is_gstr3b_due_today': is_gstr3b_due_today,
+        'is_tds_qtr_due_today': is_tds_qtr_due_today,
+        'qtr_label': qtr_label,
         'prev_year': prev_year,
         'prev_month': prev_month,
         'next_year': next_year,
@@ -130,7 +214,7 @@ def compliance_report_view(request, year=None, month=None):
         'pending_by_type': pending_by_type,
         'matrix_rows': matrix_rows,
         'company_choices': ComplianceItem.COMPANY_CHOICES,
-        'type_choices': ComplianceItem.COMPLIANCE_TYPE_CHOICES,
+        'type_choices': active_type_choices,
         'all_users': all_users,
         'company_filter': company_filter,
         'type_filter': type_filter,
@@ -177,9 +261,12 @@ def compliance_detail_api(request, item_id):
 
 @login_required
 def compliance_mark_done_view(request, item_id):
-    """Mark a pending compliance item as DONE. Safe from race conditions via DB select_for_update lock."""
+    """Mark a pending compliance item as DONE. Restricted to Employees (Boss has view-only access)."""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST method required'}, status=405)
+
+    if request.user.is_boss:
+        raise PermissionDenied("Boss users have view-only access to compliance reports.")
 
     with transaction.atomic():
         try:
@@ -188,23 +275,19 @@ def compliance_mark_done_view(request, item_id):
             messages.error(request, "Compliance item not found.")
             return redirect(request.META.get('HTTP_REFERER', 'compliance:compliance_report'))
 
-        if item.status == ComplianceItem.DONE:
+        if item.status in [ComplianceItem.DONE, ComplianceItem.NOT_APPLICABLE]:
             messages.warning(
                 request,
-                f"This compliance item was already completed by {item.completed_by.full_name or item.completed_by.username} on {item.completed_at.strftime('%b %d, %Y')}."
+                f"This compliance item was already completed or marked as {item.get_status_display()}."
             )
             return redirect(request.META.get('HTTP_REFERER', 'compliance:compliance_report'))
 
-        reference_number = request.POST.get('reference_number', '').strip()
         remarks = request.POST.get('remarks', '').strip()
-        document_link = request.POST.get('document_link', '').strip()
 
         item.status = ComplianceItem.DONE
         item.completed_by = request.user
         item.completed_at = timezone.now()
-        item.reference_number = reference_number
         item.remarks = remarks
-        item.document_link = document_link
         item.save()
 
     log_action(
@@ -215,6 +298,47 @@ def compliance_mark_done_view(request, item_id):
         f"Marked {item.get_company_display()} - {item.get_compliance_type_display()} ({item.month}/{item.year}) as Done."
     )
     messages.success(request, f"Compliance item for {item.get_company_display()} ({item.get_compliance_type_display()}) successfully marked as DONE!")
+    return redirect(request.META.get('HTTP_REFERER', 'compliance:compliance_report'))
+
+@login_required
+def compliance_mark_na_view(request, item_id):
+    """Mark a pending compliance item as NOT_APPLICABLE (N/A). Restricted to Helper employees."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST method required'}, status=405)
+
+    if request.user.is_boss or not request.user.is_helper:
+        raise PermissionDenied("Only Helper employees can mark compliance items as N/A.")
+
+    with transaction.atomic():
+        try:
+            item = ComplianceItem.objects.select_for_update().get(id=item_id)
+        except ComplianceItem.DoesNotExist:
+            messages.error(request, "Compliance item not found.")
+            return redirect(request.META.get('HTTP_REFERER', 'compliance:compliance_report'))
+
+        if item.status in [ComplianceItem.DONE, ComplianceItem.NOT_APPLICABLE]:
+            messages.warning(
+                request,
+                f"This compliance item was already updated as {item.get_status_display()}."
+            )
+            return redirect(request.META.get('HTTP_REFERER', 'compliance:compliance_report'))
+
+        remarks = request.POST.get('remarks', '').strip()
+
+        item.status = ComplianceItem.NOT_APPLICABLE
+        item.completed_by = request.user
+        item.completed_at = timezone.now()
+        item.remarks = remarks
+        item.save()
+
+    log_action(
+        request.user,
+        'COMPLIANCE_MARKED_NA',
+        'ComplianceItem',
+        item.id,
+        f"Marked {item.get_company_display()} - {item.get_compliance_type_display()} ({item.month}/{item.year}) as N/A."
+    )
+    messages.info(request, f"Compliance item for {item.get_company_display()} ({item.get_compliance_type_display()}) marked as N/A.")
     return redirect(request.META.get('HTTP_REFERER', 'compliance:compliance_report'))
 
 @login_required

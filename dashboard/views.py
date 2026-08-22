@@ -16,11 +16,15 @@ def dashboard_index(request):
     current_year = today.year
     current_month = today.month
 
-    # Ensure compliance items exist for current month
-    ensure_compliance_items_exist(current_year, current_month)
+    # Active compliance period is previous month relative to today (e.g. July compliance when in August)
+    compliance_year = today.year - 1 if today.month == 1 else today.year
+    compliance_month = 12 if today.month == 1 else today.month - 1
+
+    # Ensure compliance items exist for active compliance month
+    ensure_compliance_items_exist(compliance_year, compliance_month)
 
     # Common compliance metrics
-    monthly_compliance = ComplianceItem.objects.filter(year=current_year, month=current_month)
+    monthly_compliance = ComplianceItem.objects.filter(year=compliance_year, month=compliance_month)
     total_compliance_count = monthly_compliance.count()
     completed_compliance_count = monthly_compliance.filter(status=ComplianceItem.DONE).count()
     pending_compliance_count = monthly_compliance.filter(status=ComplianceItem.PENDING).count()
@@ -48,6 +52,8 @@ def dashboard_index(request):
             'role': 'BOSS',
             'today': today,
             'current_month_name': calendar.month_name[current_month],
+            'compliance_month_name': calendar.month_name[compliance_month],
+            'compliance_year': compliance_year,
             'total_active_employees': total_active_employees,
             'submitted_today_count': submitted_today_count,
             'pending_today_count': pending_today_count,
@@ -75,8 +81,8 @@ def dashboard_index(request):
         completion_pct = round((user_monthly_tasks_count / num_days_in_month) * 100) if num_days_in_month > 0 else 0
 
         recent_compliance_updates = ComplianceItem.objects.filter(
-            year=current_year,
-            month=current_month,
+            year=compliance_year,
+            month=compliance_month,
             status=ComplianceItem.DONE
         ).select_related('completed_by').order_by('-completed_at')[:5]
 
@@ -92,6 +98,8 @@ def dashboard_index(request):
             'today': today,
             'today_iso': today_iso,
             'current_month_name': calendar.month_name[current_month],
+            'compliance_month_name': calendar.month_name[compliance_month],
+            'compliance_year': compliance_year,
             'today_task': today_task,
             'today_submitted': today_submitted,
             'user_monthly_tasks_count': user_monthly_tasks_count,

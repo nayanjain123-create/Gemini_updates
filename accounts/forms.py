@@ -51,13 +51,14 @@ class UserCreateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['full_name', 'username', 'email', 'phone_number', 'role', 'password']
+        fields = ['full_name', 'username', 'email', 'phone_number', 'role', 'is_helper', 'password']
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Jane Doe'}),
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. janedoe'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'e.g. jane@gemini.com'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional phone number'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
+            'is_helper': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def clean_username(self):
@@ -75,12 +76,13 @@ class UserCreateForm(forms.ModelForm):
 class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['full_name', 'email', 'phone_number', 'role', 'is_active']
+        fields = ['full_name', 'email', 'phone_number', 'role', 'is_helper', 'is_active']
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
+            'is_helper': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

@@ -14,6 +14,8 @@
 
     <!-- Month Navigator Controls -->
     <div class="d-flex align-items-center gap-2">
+
+
       <a href="{% url 'reports:daily_report_by_month' prev_year prev_month %}" class="btn btn-outline-secondary btn-sm" title="Previous Month">
         <i class="bi bi-chevron-left"></i>
       </a>
@@ -40,47 +42,6 @@
         <i class="bi bi-geo-alt-fill me-1"></i> Today (Aug {{ today.day }})
       </button>
       {% endif %}
-    </div>
-  </div>
-
-  <!-- Filter Controls Bar -->
-  <div class="card card-stat border-0 shadow-sm mb-4">
-    <div class="card-body p-3">
-      <form method="get" class="row g-3 align-items-center">
-        <input type="hidden" name="month" value="{{ selected_month }}">
-        <input type="hidden" name="year" value="{{ selected_year }}">
-
-        <div class="col-12 col-md-5">
-          <label class="form-label small fw-semibold mb-1">Filter Employee</label>
-          <select name="employee" class="form-select form-select-sm">
-            <option value="">All Active Employees</option>
-            {% for emp in all_employees %}
-            <option value="{{ emp.id }}" {% if employee_filter == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.full_name|default:emp.username }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-12 col-md-3">
-          <div class="form-check mt-4">
-            <input class="form-check-input" type="checkbox" name="has_comments" value="1" id="commentsCheck" {% if has_comments == '1' %}checked{% endif %}>
-            <label class="form-check-label small fw-semibold" for="commentsCheck">
-              With Comments Only
-            </label>
-          </div>
-        </div>
-
-        <div class="col-12 col-md-4 d-flex gap-2 align-self-end">
-          <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><i class="bi bi-filter me-1"></i> Apply Filter</button>
-          {% if employee_filter or has_comments %}
-          <a href="{% url 'reports:daily_report_by_month' selected_year selected_month %}" class="btn btn-outline-danger btn-sm" title="Clear Filter"><i class="bi bi-x-circle"></i></a>
-          {% endif %}
-          {% if user.is_boss %}
-          <a href="{% url 'reports:missing_daily_reports' %}" class="btn btn-outline-warning btn-sm" title="Missing Reports View">
-            <i class="bi bi-exclamation-triangle"></i>
-          </a>
-          {% endif %}
-        </div>
-      </form>
     </div>
   </div>
 

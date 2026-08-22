@@ -24,7 +24,7 @@
 - Status indicators: Completed (Green), In Progress (Blue/Info), Blocked (Red/Warning), Not Started (Gray), with comment indicator dots when Boss comments exist.
 
 ### 3. Compliance Report Module
-- 15 auto-generated compliance records per month (5 Companies: `GI`, `International`, `HUF`, `LLP`, `GWT` × 3 Types: `TDS Payment`, `GSTR-1`, `GSTR-3B`).
+- Auto-generated compliance records per month (5 Companies: `GI`, `International`, `HUF`, `LLP`, `GTW` × Compliance Types: `TDS Payment`, `GSTR-1`, `GSTR-3B`, and Quarterly TDS Returns).
 - Immutable `DONE` state with timestamp, completing user, reference/challan number, remarks, and document link.
 - Export options: Export monthly matrix to **CSV** and **Excel (.xlsx)** format.
 - Print-friendly layout view.

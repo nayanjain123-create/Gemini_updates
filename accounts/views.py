@@ -235,6 +235,22 @@ def employee_status_toggle_view(request, user_id):
 
 @login_required
 @boss_required
+def employee_helper_toggle_view(request, user_id):
+    if request.method != 'POST':
+        return redirect('accounts:employee_list')
+
+    target_user = get_object_or_404(User, id=user_id)
+    target_user.is_helper = not target_user.is_helper
+    target_user.save()
+    
+    status_str = "marked as Helper" if target_user.is_helper else "removed from Helper role"
+    log_action(request.user, 'HELPER_STATUS_CHANGED', 'User', target_user.id, f"User {target_user.username} was {status_str}.")
+    messages.success(request, f"User '{target_user.full_name or target_user.username}' was {status_str}.")
+
+    return redirect('accounts:employee_list')
+
+@login_required
+@boss_required
 def employee_reset_password_by_boss_view(request, user_id):
     """Boss view to directly change/reset an employee's password."""
     target_user = get_object_or_404(User, id=user_id)

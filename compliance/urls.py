@@ -9,5 +9,6 @@ urlpatterns = [
     path('compliance-report/<int:year>/<int:month>/print/', views.compliance_print_view, name='compliance_print'),
     path('compliance/<int:item_id>/', views.compliance_detail_api, name='compliance_detail_api'),
     path('compliance/<int:item_id>/mark-done/', views.compliance_mark_done_view, name='compliance_mark_done'),
+    path('compliance/<int:item_id>/mark-na/', views.compliance_mark_na_view, name='compliance_mark_na'),
     path('compliance/<int:item_id>/comment/', views.compliance_comment_add_view, name='compliance_comment_add'),
 ]

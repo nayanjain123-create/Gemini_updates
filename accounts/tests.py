@@ -166,7 +166,6 @@ class GeminiUpdatesPermissionsAndWorkflowTests(TestCase):
 
         self.client.login(username='emp_a', password='password123')
         response = self.client.post(reverse('compliance:compliance_mark_done', args=[item.id]), {
-            'reference_number': 'REF-123456',
             'remarks': 'Paid via net banking'
         })
         self.assertEqual(response.status_code, 302)
@@ -175,7 +174,7 @@ class GeminiUpdatesPermissionsAndWorkflowTests(TestCase):
         self.assertEqual(item.status, ComplianceItem.DONE)
         self.assertEqual(item.completed_by, self.emp_a)
         self.assertIsNotNone(item.completed_at)
-        self.assertEqual(item.reference_number, 'REF-123456')
+        self.assertEqual(item.remarks, 'Paid via net banking')
 
     # 8. A Done compliance item cannot be marked Done again.
     def test_done_compliance_item_cannot_be_marked_done_again(self):
@@ -187,21 +186,73 @@ class GeminiUpdatesPermissionsAndWorkflowTests(TestCase):
             status=ComplianceItem.DONE,
             completed_by=self.emp_a,
             completed_at=timezone.now(),
-            reference_number='ORIGINAL-REF'
+            remarks='Original remarks'
         )
 
         # Employee B attempts to mark done again
         self.client.login(username='emp_b', password='password123')
         response = self.client.post(reverse('compliance:compliance_mark_done', args=[item.id]), {
-            'reference_number': 'NEW-HACK-REF',
             'remarks': 'Overwrite attempt'
         })
         self.assertEqual(response.status_code, 302)
 
         item.refresh_from_db()
-        # Ensure original user and ref number remain intact
+        # Ensure original user and remarks remain intact
         self.assertEqual(item.completed_by, self.emp_a)
-        self.assertEqual(item.reference_number, 'ORIGINAL-REF')
+        self.assertEqual(item.remarks, 'Original remarks')
+
+    # 8b. Helper employee can mark compliance item as N/A, Boss has view-only access.
+    def test_helper_permissions_for_na_compliance(self):
+        item = ComplianceItem.objects.create(
+            company=ComplianceItem.GI,
+            compliance_type=ComplianceItem.TDS_PAYMENT,
+            month=8,
+            year=2026
+        )
+
+        # Standard employee attempts mark N/A -> Forbidden (403)
+        self.client.login(username='emp_a', password='password123')
+        resp_std = self.client.post(reverse('compliance:compliance_mark_na', args=[item.id]), {
+            'remarks': 'Standard employee N/A attempt'
+        })
+        self.assertEqual(resp_std.status_code, 403)
+
+        # Boss attempts mark N/A -> Forbidden (403, view-only)
+        self.client.login(username='bossuser', password='password123')
+        resp_boss = self.client.post(reverse('compliance:compliance_mark_na', args=[item.id]), {
+            'remarks': 'Boss N/A attempt'
+        })
+        self.assertEqual(resp_boss.status_code, 403)
+
+        # Promote Employee B to Helper
+        self.emp_b.is_helper = True
+        self.emp_b.save()
+
+        # Helper attempts mark N/A -> Allowed (302)
+        self.client.login(username='emp_b', password='password123')
+        resp_helper = self.client.post(reverse('compliance:compliance_mark_na', args=[item.id]), {
+            'remarks': 'Not applicable for GI this month'
+        })
+        self.assertEqual(resp_helper.status_code, 302)
+
+        item.refresh_from_db()
+        self.assertEqual(item.status, ComplianceItem.NOT_APPLICABLE)
+        self.assertEqual(item.completed_by, self.emp_b)
+        self.assertEqual(item.remarks, 'Not applicable for GI this month')
+
+    # 8c. Boss user gets 403 when attempting mark-done (view-only access).
+    def test_boss_has_view_only_compliance_access(self):
+        item = ComplianceItem.objects.create(
+            company=ComplianceItem.GI,
+            compliance_type=ComplianceItem.TDS_PAYMENT,
+            month=8,
+            year=2026
+        )
+        self.client.login(username='bossuser', password='password123')
+        resp = self.client.post(reverse('compliance:compliance_mark_done', args=[item.id]), {
+            'remarks': 'Boss mark done attempt'
+        })
+        self.assertEqual(resp.status_code, 403)
 
     # 9. Employee cannot access employee-management pages.
     def test_employee_cannot_access_employee_management(self):

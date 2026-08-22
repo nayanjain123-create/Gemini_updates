@@ -16,6 +16,7 @@ urlpatterns = [
     path('employees/<int:user_id>/reset-password/', views.employee_reset_password_by_boss_view, name='employee_reset_password_by_boss'),
     path('employees/<int:user_id>/role/', views.employee_role_toggle_view, name='employee_role_toggle'),
     path('employees/<int:user_id>/status/', views.employee_status_toggle_view, name='employee_status_toggle'),
+    path('employees/<int:user_id>/helper/', views.employee_helper_toggle_view, name='employee_helper_toggle'),
     
     # Password Reset Flow
     path('password-reset/', auth_views.PasswordResetView.as_view(

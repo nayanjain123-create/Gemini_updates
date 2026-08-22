@@ -55,7 +55,7 @@
           <div class="card-stat-value text-info">{{ completed_compliance_count }} <span class="fs-6 text-muted">/ {{ total_compliance_count }}</span></div>
           <i class="bi bi-clipboard2-check fs-1 text-info opacity-50"></i>
         </div>
-        <div class="small text-muted mt-2">For {{ current_month_name }} {{ today.year }}</div>
+        <div class="small text-muted mt-2">For {{ compliance_month_name }} {{ compliance_year }}</div>
       </div>
     </div>
 
@@ -96,13 +96,6 @@
             <i class="bi bi-chevron-right"></i>
           </a>
 
-          <a href="{% url 'reports:missing_daily_reports' %}" class="btn btn-outline-warning d-flex align-items-center justify-content-between p-3 text-start">
-            <div>
-              <div class="fw-bold"><i class="bi bi-exclamation-triangle me-2"></i> Missing Daily Reports</div>
-              <div class="small text-muted">Identify employees with missing entries</div>
-            </div>
-            <i class="bi bi-chevron-right"></i>
-          </a>
 
           <a href="{% url 'audit:audit_log_list' %}" class="btn btn-outline-info d-flex align-items-center justify-content-between p-3 text-start">
             <div>

@@ -14,6 +14,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, help_text="Email address (used for login and notifications)")
     phone_number = models.CharField(max_length=20, blank=True, default='')
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default=EMPLOYEE)
+    is_helper = models.BooleanField(default=False, help_text="Helper role who can mark compliance items as N/A")
     updated_at = models.DateTimeField(auto_now=True)
 
     @property

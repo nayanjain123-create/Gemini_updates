@@ -4,11 +4,9 @@ from .models import ComplianceItem, ComplianceComment
 class ComplianceMarkDoneForm(forms.ModelForm):
     class Meta:
         model = ComplianceItem
-        fields = ['reference_number', 'remarks', 'document_link']
+        fields = ['remarks']
         widgets = {
-            'reference_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Challan # / Ack # / Ref Code'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional completion notes or remarks...'}),
-            'document_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://...'}),
         }
 
 class ComplianceCommentForm(forms.ModelForm):

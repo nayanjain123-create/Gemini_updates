@@ -7,34 +7,44 @@ class ComplianceItem(models.Model):
     INTERNATIONAL = 'INTERNATIONAL'
     HUF = 'HUF'
     LLP = 'LLP'
-    GWT = 'GWT'
+    GTW = 'GTW'
 
     COMPANY_CHOICES = [
         (GI, 'GI'),
         (INTERNATIONAL, 'International'),
         (HUF, 'HUF'),
         (LLP, 'LLP'),
-        (GWT, 'GWT'),
+        (GTW, 'GTW'),
     ]
 
     # Compliance Types
     TDS_PAYMENT = 'TDS_PAYMENT'
     GSTR_1 = 'GSTR_1'
     GSTR_3B = 'GSTR_3B'
+    TDS_RETURN_Q1 = 'TDS_RETURN_Q1'
+    TDS_RETURN_Q2 = 'TDS_RETURN_Q2'
+    TDS_RETURN_Q3 = 'TDS_RETURN_Q3'
+    TDS_RETURN_Q4 = 'TDS_RETURN_Q4'
 
     COMPLIANCE_TYPE_CHOICES = [
         (TDS_PAYMENT, 'TDS Payment'),
         (GSTR_1, 'GSTR-1'),
         (GSTR_3B, 'GSTR-3B'),
+        (TDS_RETURN_Q1, 'TDS Return Q1'),
+        (TDS_RETURN_Q2, 'TDS Return Q2'),
+        (TDS_RETURN_Q3, 'TDS Return Q3'),
+        (TDS_RETURN_Q4, 'TDS Return Q4'),
     ]
 
     # Status
     PENDING = 'PENDING'
     DONE = 'DONE'
+    NOT_APPLICABLE = 'NOT_APPLICABLE'
 
     STATUS_CHOICES = [
         (PENDING, 'Pending'),
         (DONE, 'Done'),
+        (NOT_APPLICABLE, 'N/A'),
     ]
 
     company = models.CharField(max_length=20, choices=COMPANY_CHOICES)
@@ -42,7 +52,7 @@ class ComplianceItem(models.Model):
     month = models.IntegerField(help_text="Month number (1-12)")
     year = models.IntegerField(help_text="4-digit Year (e.g. 2026)")
     
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=PENDING)
     
     completed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

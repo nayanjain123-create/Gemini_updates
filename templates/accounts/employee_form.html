@@ -77,8 +77,21 @@
               </div>
               {% endif %}
 
+
+
+              {% if form.is_helper %}
+              <div class="col-12 col-md-6">
+                <div class="form-check form-switch mt-2">
+                  {{ form.is_helper }}
+                  <label class="form-check-label fw-semibold" for="{{ form.is_helper.id_for_label }}">
+                    Mark as Helper (Can set compliance items to N/A)
+                  </label>
+                </div>
+              </div>
+              {% endif %}
+
               {% if form.is_active %}
-              <div class="col-12">
+              <div class="col-12 col-md-6">
                 <div class="form-check form-switch mt-2">
                   {{ form.is_active }}
                   <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">
