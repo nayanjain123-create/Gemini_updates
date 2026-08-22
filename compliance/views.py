@@ -91,7 +91,7 @@ def compliance_report_view(request, year=None, month=None):
     from datetime import date
     tds_due_date = date(due_year, due_month, 7)
     gstr1_due_date = date(due_year, due_month, 11)
-    gstr3b_due_date = date(due_year, due_month, 28)
+    gstr3b_due_date = date(due_year, due_month, 20)
 
     is_tds_due_today = (today == tds_due_date)
     is_gstr1_due_today = (today == gstr1_due_date)
