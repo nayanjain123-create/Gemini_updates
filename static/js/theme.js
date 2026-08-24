@@ -25,15 +25,15 @@
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-bs-theme', theme);
     const themeBtnIcon = document.getElementById('theme-toggle-icon');
-    const themeBtnText = document.getElementById('theme-toggle-text');
+    const themeToggleBtn = document.getElementById('theme-toggle');
 
     if (themeBtnIcon) {
       if (theme === 'dark') {
         themeBtnIcon.className = 'bi bi-sun-fill text-warning';
-        if (themeBtnText) themeBtnText.textContent = 'Light Mode';
+        if (themeToggleBtn) themeToggleBtn.title = 'Switch to Light Mode';
       } else {
         themeBtnIcon.className = 'bi bi-moon-stars-fill text-primary';
-        if (themeBtnText) themeBtnText.textContent = 'Dark Mode';
+        if (themeToggleBtn) themeToggleBtn.title = 'Switch to Dark Mode';
       }
     }
   }
