@@ -26,8 +26,11 @@ class User(AbstractUser):
         return self.role == self.EMPLOYEE
 
     def save(self, *args, **kwargs):
-        # Sync is_staff with BOSS role for admin convenience
-        if self.role == self.BOSS:
+        # Sync is_staff and role with is_superuser for admin convenience
+        if self.is_superuser:
+            self.role = self.BOSS
+            self.is_staff = True
+        elif self.role == self.BOSS:
             self.is_staff = True
         super().save(*args, **kwargs)
 
