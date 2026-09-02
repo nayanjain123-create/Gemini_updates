@@ -158,7 +158,7 @@ def daily_task_detail(request, task_id):
         'status': task.status,
         'status_display': task.get_status_display(),
         'reference_link': task.reference_link,
-        'is_editable': (request.user.id == task.employee.id),
+        'is_editable': (request.user.id == task.employee.id and not request.user.is_boss),
         'can_view_comments': can_view_comments,
         'created_at': task.created_at.strftime('%b %d, %Y %I:%M %p'),
         'updated_at': task.updated_at.strftime('%b %d, %Y %I:%M %p'),
@@ -168,9 +168,14 @@ def daily_task_detail(request, task_id):
 
 @login_required
 def daily_task_save(request):
-    """Create or update daily task entry."""
+    """Create or update daily task entry (Employee self-service only; Boss has strictly read-only access)."""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST method required'}, status=405)
+
+    # Boss cannot create or edit employee daily tasks
+    if request.user.is_boss:
+        messages.error(request, "Boss has read-only access to employee daily tasks.")
+        return redirect(request.META.get('HTTP_REFERER', 'reports:daily_report'))
 
     task_id = request.POST.get('task_id')
     report_date_str = request.POST.get('report_date')
@@ -186,17 +191,12 @@ def daily_task_save(request):
         messages.error(request, "Invalid report date format.")
         return redirect(request.META.get('HTTP_REFERER', 'reports:daily_report'))
 
-    # Determine target employee
-    employee_id = request.POST.get('employee_id')
-    if employee_id and request.user.is_boss:
-        target_employee = get_object_or_404(User, id=employee_id)
-    else:
-        target_employee = request.user
+    target_employee = request.user
 
     # Security check if editing existing task_id
     if task_id:
         existing_task = get_object_or_404(DailyTaskReport, id=task_id)
-        if existing_task.employee != request.user and not request.user.is_boss:
+        if existing_task.employee != request.user:
             raise PermissionDenied("You are not authorized to edit another employee's daily report.")
         target_employee = existing_task.employee
         report_date = existing_task.report_date

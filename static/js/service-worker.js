@@ -3,7 +3,7 @@
    Conservative Cache Strategy: Zero-Private-Data Caching Guarantee
    ========================================================================== */
 
-const CACHE_NAME = 'gemini-insights-static-v4';
+const CACHE_NAME = 'gemini-insights-static-v6';
 
 // Static, public assets safe for offline caching (NO private or role data)
 const PRECACHE_ASSETS = [

@@ -20,13 +20,13 @@
         <i class="bi bi-chevron-left"></i>
       </a>
 
-      <form method="get" action="{% url 'reports:daily_report' %}" class="d-flex align-items-center gap-2">
-        <select name="month" class="form-select form-select-sm" style="min-width: 100px;" onchange="this.form.submit()">
+      <form method="get" action="{% url 'reports:daily_report' %}" class="d-flex align-items-center gap-2 month-nav-form">
+        <select name="month" class="form-select form-select-sm month-select-dropdown" onchange="this.form.submit()">
           {% for m_num, m_name in months_list %}
           <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
           {% endfor %}
         </select>
-        <select name="year" class="form-select form-select-sm" style="min-width: 85px;" onchange="this.form.submit()">
+        <select name="year" class="form-select form-select-sm year-select-dropdown" onchange="this.form.submit()">
           {% for y in years_list %}
           <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
           {% endfor %}
@@ -38,7 +38,7 @@
       </a>
 
       {% if selected_month == today.month and selected_year == today.year %}
-      <button type="button" class="btn btn-primary btn-sm fw-bold ms-2" onclick="scrollToTodayColumn()" title="Jump to Today's Column">
+      <button type="button" class="btn btn-primary btn-sm fw-bold ms-2 d-none d-md-inline-flex" onclick="scrollToTodayColumn()" title="Jump to Today's Column">
         <i class="bi bi-geo-alt-fill me-1"></i> Today ({{ today|date:"M" }} {{ today.day }})
       </button>
       {% endif %}
@@ -154,7 +154,7 @@
 
           <!-- Read-only notification if not editable -->
           <div id="readOnlyNotice" class="alert alert-info py-2 mb-3" style="display: none;">
-            <i class="bi bi-info-circle-fill me-1"></i> You are viewing another employee's daily report in <strong>read-only mode</strong>.
+            <i class="bi bi-info-circle-fill me-1"></i> You are viewing this daily report in <strong>read-only mode</strong>.
           </div>
 
           <!-- Boss Comments Section -->
@@ -295,18 +295,19 @@
       modalBodyContent.style.display = 'block';
 
       document.getElementById('inputTaskDescription').value = '';
-      document.getElementById('inputReferenceLink').value = '';
-
-      const isEditable = ('{{ request.user.id }}' === employeeId) || ('{{ request.user.is_boss }}' === 'True');
+      const isEditable = ('{{ request.user.id }}' === String(employeeId)) && ('{{ request.user.is_boss }}' !== 'True');
       const readOnlyNotice = document.getElementById('readOnlyNotice');
       const btnSaveTask = document.getElementById('btnSaveTask');
+      const taskDescInput = document.getElementById('inputTaskDescription');
 
       if (!isEditable) {
         readOnlyNotice.style.display = 'block';
         btnSaveTask.style.display = 'none';
+        taskDescInput.setAttribute('readonly', 'readonly');
       } else {
         readOnlyNotice.style.display = 'none';
         btnSaveTask.style.display = 'inline-block';
+        taskDescInput.removeAttribute('readonly');
       }
 
       commentsList.innerHTML = '<div class="small text-muted fst-italic">Save task first to enable comments.</div>';

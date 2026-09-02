@@ -47,15 +47,20 @@
         <span>Gemini Insights</span>
       </a>
 
-      <!-- Mobile Hamburger Toggle -->
-      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+      <!-- Mobile Right Controls: Dark Theme Toggle between Brand and 3-Lines Button (Mobile Only) -->
+      <div class="d-flex align-items-center gap-2 d-lg-none ms-auto">
+        <button class="theme-toggle-btn" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
+          <i id="theme-toggle-icon-mobile" class="bi bi-moon-stars-fill"></i>
+        </button>
+        <button class="navbar-toggler border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
 
       <!-- Navbar Links -->
       <div class="collapse navbar-collapse" id="navbarMain">
-        <!-- Main Navigation -->
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-2 align-items-center">
+        <!-- Main Navigation Links (Dashboard, Daily Report, Compliance, Tasks, Sales, Purchase) -->
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-2 align-items-lg-center nav-buttons-group">
           <li class="nav-item">
             <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
               <i class="bi bi-grid-1x2-fill me-1"></i> Dashboard
@@ -76,20 +81,22 @@
               <i class="bi bi-list-check me-1"></i> Tasks
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom text-success fw-semibold" href="https://gemini-sales-invoice-converter.vercel.app/" target="_blank" rel="noopener noreferrer" title="Sales Invoice Converter Tool">
+              <i class="bi bi-graph-up-arrow me-1"></i> Sales
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom text-info fw-semibold" href="https://geminiexcel.streamlit.app/" target="_blank" rel="noopener noreferrer" title="Purchase Excel Tool">
+              <i class="bi bi-bag-check-fill me-1"></i> Purchase
+            </a>
+          </li>
         </ul>
 
-        <!-- Right Side Nav Utilities -->
-        <div class="d-flex align-items-center gap-2 gap-md-3">
-          <!-- Sales & Purchase External Tool Links -->
-          <a class="nav-link nav-link-custom text-success fw-semibold" href="https://gemini-sales-invoice-converter.vercel.app/" target="_blank" rel="noopener noreferrer" title="Sales Invoice Converter Tool">
-            <i class="bi bi-graph-up-arrow me-1"></i> Sales
-          </a>
-          <a class="nav-link nav-link-custom text-info fw-semibold" href="https://geminiexcel.streamlit.app/" target="_blank" rel="noopener noreferrer" title="Purchase Excel Tool">
-            <i class="bi bi-bag-check-fill me-1"></i> Purchase
-          </a>
-
-          <!-- Theme Toggle Switch -->
-          <button id="theme-toggle" class="theme-toggle-btn" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
+        <!-- Right Side Nav Utilities (Desktop Theme toggle & Profile) -->
+        <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3 nav-utilities-group">
+          <!-- Desktop Theme Toggle Switch -->
+          <button id="theme-toggle" class="theme-toggle-btn d-none d-lg-inline-flex" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
             <i id="theme-toggle-icon" class="bi bi-moon-stars-fill"></i>
           </button>
 
@@ -99,7 +106,7 @@
               <div class="avatar-circle">
                 <i class="bi bi-person-circle fs-5"></i>
               </div>
-              <div class="text-start d-none d-sm-block">
+              <div class="text-start">
                 <div class="fw-bold fs-7 lh-1">{{ user.full_name|default:user.username }}</div>
                 <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %} mt-1">
                   {{ user.get_role_display }}

@@ -60,13 +60,13 @@
         <i class="bi bi-chevron-left"></i>
       </a>
 
-      <form method="get" action="{% url 'compliance:compliance_report' %}" class="d-flex align-items-center gap-2">
-        <select name="month" class="form-select form-select-sm" style="min-width: 100px;" onchange="this.form.submit()">
+      <form method="get" action="{% url 'compliance:compliance_report' %}" class="d-flex align-items-center gap-2 month-nav-form">
+        <select name="month" class="form-select form-select-sm month-select-dropdown" onchange="this.form.submit()">
           {% for m_num, m_name in months_list %}
           <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
           {% endfor %}
         </select>
-        <select name="year" class="form-select form-select-sm" style="min-width: 85px;" onchange="this.form.submit()">
+        <select name="year" class="form-select form-select-sm year-select-dropdown" onchange="this.form.submit()">
           {% for y in years_list %}
           <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
           {% endfor %}

@@ -24,18 +24,21 @@
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-bs-theme', theme);
-    const themeBtnIcon = document.getElementById('theme-toggle-icon');
-    const themeToggleBtn = document.getElementById('theme-toggle');
 
-    if (themeBtnIcon) {
-      if (theme === 'dark') {
-        themeBtnIcon.className = 'bi bi-sun-fill text-warning';
-        if (themeToggleBtn) themeToggleBtn.title = 'Switch to Light Mode';
-      } else {
-        themeBtnIcon.className = 'bi bi-moon-stars-fill text-primary';
-        if (themeToggleBtn) themeToggleBtn.title = 'Switch to Dark Mode';
+    // Update all theme toggle buttons across mobile and desktop
+    const themeButtons = document.querySelectorAll('.theme-toggle-btn');
+    themeButtons.forEach(btn => {
+      const icon = btn.querySelector('i');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'bi bi-sun-fill text-warning';
+          btn.title = 'Switch to Light Mode';
+        } else {
+          icon.className = 'bi bi-moon-stars-fill text-primary';
+          btn.title = 'Switch to Dark Mode';
+        }
       }
-    }
+    });
   }
 
   // Apply immediately before DOM rendering to prevent flashing
@@ -45,15 +48,15 @@
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme(getPreferredTheme());
 
-    const toggleBtn = document.getElementById('theme-toggle');
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', () => {
+    const toggleButtons = document.querySelectorAll('.theme-toggle-btn');
+    toggleButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
         const activeTheme = document.documentElement.getAttribute('data-theme');
         const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
         setStoredTheme(nextTheme);
         applyTheme(nextTheme);
       });
-    }
+    });
 
     // Auto dismiss Django alerts after 5 seconds
     const alerts = document.querySelectorAll('.alert-dismissible');
