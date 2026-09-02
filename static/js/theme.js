@@ -1,5 +1,5 @@
 /**
- * Gemini Updates - Theme Toggle Engine & Interactive Helper Script
+ * Gemini Insights - Theme Toggle Engine & Interactive Helper Script
  */
 
 (function () {

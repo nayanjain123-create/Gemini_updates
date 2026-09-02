@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Daily Report Matrix - Gemini Updates{% endblock %}
+{% block title %}Daily Report Matrix - Gemini Insights{% endblock %}
 
 {% block content %}
 <div class="container-fluid my-3">
@@ -39,7 +39,7 @@
 
       {% if selected_month == today.month and selected_year == today.year %}
       <button type="button" class="btn btn-primary btn-sm fw-bold ms-2" onclick="scrollToTodayColumn()" title="Jump to Today's Column">
-        <i class="bi bi-geo-alt-fill me-1"></i> Today (Aug {{ today.day }})
+        <i class="bi bi-geo-alt-fill me-1"></i> Today ({{ today|date:"M" }} {{ today.day }})
       </button>
       {% endif %}
     </div>

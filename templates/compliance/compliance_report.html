@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Compliance Report Matrix - Gemini Updates{% endblock %}
+{% block title %}Compliance Report Matrix - Gemini Insights{% endblock %}
 
 {% block content %}
 <div class="container-fluid my-3">
@@ -84,9 +84,9 @@
     <table class="table-matrix compliance-matrix">
       <thead>
         <tr>
-          <th class="sticky-col" style="min-width: 180px;">Company Name</th>
+          <th class="sticky-col">Company Name</th>
           {% for code, label in type_choices %}
-          <th style="min-width: 250px;">
+          <th>
             <div class="fs-6 fw-bold">{{ label }}</div>
             {% if code == 'TDS_PAYMENT' %}
             <div class="badge bg-primary text-white mt-1" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i> Due: 7th {{ due_month_name }}</div>
@@ -131,10 +131,10 @@
                     <span class="badge bg-purple text-white"><i class="bi bi-chat-text-fill"></i> {{ cell.item.comments.count }}</span>
                     {% endif %}
                   </div>
-                  <div class="fw-bold small text-success mt-1"><i class="bi bi-person-fill me-1"></i> {{ cell.item.completed_by.full_name|default:cell.item.completed_by.username }}</div>
+                  <div class="fw-bold small text-success mt-1"><i class="bi bi-person-fill me-1"></i> {% if cell.item.completed_by %}{{ cell.item.completed_by.full_name|default:cell.item.completed_by.username }}{% else %}System{% endif %}</div>
                   <div class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i> {{ cell.item.completed_at|date:"M d, Y H:i" }}</div>
                   {% if cell.item.remarks %}
-                  <div class="small text-truncate mt-1 text-body" style="font-size: 0.75rem;"><strong>Remarks:</strong> {{ cell.item.remarks }}</div>
+                  <div class="small mt-1 text-body remark-text" style="font-size: 0.75rem; word-break: break-word; white-space: normal; overflow-wrap: break-word; line-height: 1.35;"><strong>Remarks:</strong> {{ cell.item.remarks }}</div>
                   {% endif %}
                 </div>
               {% elif cell.item.status == 'NOT_APPLICABLE' %}
@@ -146,10 +146,10 @@
                     <span class="badge bg-purple text-white"><i class="bi bi-chat-text-fill"></i> {{ cell.item.comments.count }}</span>
                     {% endif %}
                   </div>
-                  <div class="fw-bold small text-info mt-1"><i class="bi bi-person-fill me-1"></i> {{ cell.item.completed_by.full_name|default:cell.item.completed_by.username }}</div>
+                  <div class="fw-bold small text-info mt-1"><i class="bi bi-person-fill me-1"></i> {% if cell.item.completed_by %}{{ cell.item.completed_by.full_name|default:cell.item.completed_by.username }}{% else %}System{% endif %}</div>
                   <div class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i> {{ cell.item.completed_at|date:"M d, Y H:i" }}</div>
                   {% if cell.item.remarks %}
-                  <div class="small text-truncate mt-1 text-body" style="font-size: 0.75rem;"><strong>Remarks:</strong> {{ cell.item.remarks }}</div>
+                  <div class="small mt-1 text-body remark-text" style="font-size: 0.75rem; word-break: break-word; white-space: normal; overflow-wrap: break-word; line-height: 1.35;"><strong>Remarks:</strong> {{ cell.item.remarks }}</div>
                   {% endif %}
                 </div>
               {% else %}

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Gemini Updates{% endblock %}
+{% block title %}Dashboard - Gemini Insights{% endblock %}
 
 {% block content %}
 <div class="container-fluid my-3">
@@ -130,7 +130,13 @@
                 {% for log in recent_audit_logs %}
                 <tr>
                   <td class="small text-muted">{{ log.created_at|date:"M d, H:i" }}</td>
-                  <td class="fw-semibold">{{ log.user.full_name|default:log.user.username|default:"System" }}</td>
+                  <td class="fw-semibold">
+                    {% if log.user %}
+                      {{ log.user.full_name|default:log.user.username }}
+                    {% else %}
+                      System
+                    {% endif %}
+                  </td>
                   <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ log.action }}</span></td>
                   <td class="small text-muted text-truncate" style="max-width: 250px;">{{ log.details|default:"—" }}</td>
                 </tr>
@@ -225,7 +231,7 @@
           {% for c in my_task_comments %}
           <div class="p-3 mb-2 rounded bg-body-tertiary border">
             <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="fw-bold text-purple"><i class="bi bi-person-badge me-1"></i> {{ c.boss.full_name|default:c.boss.username }}</span>
+              <span class="fw-bold text-purple"><i class="bi bi-person-badge me-1"></i> {% if c.boss %}{{ c.boss.full_name|default:c.boss.username }}{% else %}Administrator{% endif %}</span>
               <span class="small text-muted">{{ c.created_at|date:"M d, Y H:i" }}</span>
             </div>
             <p class="mb-1 text-break text-body">{{ c.comment }}</p>
@@ -252,7 +258,7 @@
           <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded border-bottom">
             <div>
               <div class="fw-bold text-body">{{ item.get_company_display }} &bull; {{ item.get_compliance_type_display }}</div>
-              <div class="small text-muted">Completed by <strong class="text-body">{{ item.completed_by.full_name|default:item.completed_by.username }}</strong> on {{ item.completed_at|date:"M d, H:i" }}</div>
+              <div class="small text-muted">Completed by <strong class="text-body">{% if item.completed_by %}{{ item.completed_by.full_name|default:item.completed_by.username }}{% else %}System{% endif %}</strong> on {{ item.completed_at|date:"M d, H:i" }}</div>
             </div>
             <span class="badge badge-completed"><i class="bi bi-check-circle-fill me-1"></i> Done</span>
           </div>

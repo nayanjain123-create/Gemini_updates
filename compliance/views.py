@@ -414,7 +414,7 @@ def compliance_export_excel_view(request, year, month):
     # Header title
     ws.merge_cells('A1:I1')
     title_cell = ws['A1']
-    title_cell.value = f"Gemini Updates - Monthly Compliance Report ({calendar.month_name[month]} {year})"
+    title_cell.value = f"Gemini Insights - Monthly Compliance Report ({calendar.month_name[month]} {year})"
     title_cell.font = Font(name='Calibri', size=16, bold=True, color='FFFFFF')
     title_cell.fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid')
     title_cell.alignment = Alignment(horizontal='center', vertical='center')

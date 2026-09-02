@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('compliance/', views.compliance_report_view, name='compliance_index'),
     path('compliance-report/', views.compliance_report_view, name='compliance_report'),
     path('compliance-report/<int:year>/<int:month>/', views.compliance_report_view, name='compliance_report_by_month'),
     path('compliance-report/<int:year>/<int:month>/export/csv/', views.compliance_export_csv_view, name='compliance_export_csv'),

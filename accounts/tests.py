@@ -443,6 +443,81 @@ class GeminiUpdatesPermissionsAndWorkflowTests(TestCase):
         self.assertEqual(root_res.status_code, 200)
         self.assertEqual(root_res.content.decode(), 'PONG')
 
+    # 17. PWA Manifest Endpoint Returns Valid JSON with application/manifest+json MIME
+    def test_pwa_manifest_endpoint(self):
+        res = self.client.get(reverse('pwa_manifest'))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/manifest+json')
+        data = res.json()
+        self.assertEqual(data['name'], 'Gemini Insights')
+        self.assertEqual(data['short_name'], 'Gemini Insights')
+        self.assertEqual(data['display'], 'standalone')
+        self.assertEqual(data['start_url'], '/')
+        self.assertTrue(len(data['icons']) >= 2)
+        icon_sizes = [icon['sizes'] for icon in data['icons']]
+        self.assertIn('192x192', icon_sizes)
+        self.assertIn('512x512', icon_sizes)
+
+    # 18. PWA Service Worker Endpoint Returns application/javascript with Root Scope Header
+    def test_pwa_service_worker_endpoint(self):
+        res = self.client.get(reverse('pwa_service_worker'))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/javascript')
+        self.assertEqual(res['Service-Worker-Allowed'], '/')
+        content = res.content.decode()
+        self.assertIn('gemini-insights-static-', content)
+        self.assertIn('/offline/', content)
+
+    # 19. PWA Offline Endpoint Returns Public Fallback Page
+    def test_pwa_offline_fallback_endpoint(self):
+        res = self.client.get(reverse('pwa_offline'))
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode()
+        self.assertIn('You are offline', content)
+        self.assertIn('Gemini Insights', content)
+        self.assertIn('Retry Connection', content)
+
+    # 20. Base Template Includes PWA Tags and Service Worker Script
+    def test_base_template_includes_pwa_tags(self):
+        self.client.login(username='emp_a', password='password123')
+        res = self.client.get(reverse('dashboard:index'))
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode()
+        self.assertIn('rel="manifest"', content)
+        self.assertIn('/manifest.webmanifest', content)
+        self.assertIn('apple-touch-icon', content)
+        self.assertIn('/service-worker.js', content)
+
+    # 21. Verify Seeding Configures Boss (Pratik) and All Requested Employees
+    def test_seed_data_configured_users(self):
+        from django.core.management import call_command
+        call_command('seed_data')
+
+        # Check Pratik
+        pratik = User.objects.get(username='pratik')
+        self.assertTrue(pratik.is_boss)
+        self.assertTrue(pratik.is_staff)
+        self.assertTrue(pratik.is_superuser)
+        self.assertTrue(self.client.login(username='pratik', password='pratik123'))
+        self.client.logout()
+
+        # Check Employees
+        expected_employees = [
+            ('rachana', 'rachana123'),
+            ('rupali', 'rupali123'),
+            ('pawan', 'pawan123'),
+            ('dhaval', 'dhaval123'),
+            ('kshitija', 'kshitija123'),
+            ('hema', 'hema123'),
+        ]
+        for username, pwd in expected_employees:
+            emp = User.objects.get(username=username)
+            self.assertTrue(emp.is_employee)
+            self.assertTrue(self.client.login(username=username, password=pwd))
+            self.client.logout()
+
+
+
 
 
 

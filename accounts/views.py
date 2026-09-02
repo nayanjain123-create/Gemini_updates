@@ -1,3 +1,6 @@
+import os
+import json
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -15,6 +18,56 @@ from audit.utils import log_action
 def ping_view(request):
     """Lightweight ping endpoint to keep Render web service active and prevent cold-start sleeping."""
     return HttpResponse("PONG", content_type="text/plain")
+
+def manifest_view(request):
+    """Serve the Web App Manifest with application/manifest+json MIME type."""
+    static_url = settings.STATIC_URL.rstrip('/')
+    manifest_data = {
+        "name": "Gemini Insights",
+        "short_name": "Gemini Insights",
+        "description": "Daily reports and compliance management",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait-primary",
+        "theme_color": "#111827",
+        "background_color": "#111827",
+        "icons": [
+            {
+                "src": f"{static_url}/pwa/icons/icon-192x192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": f"{static_url}/pwa/icons/icon-512x512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    return HttpResponse(
+        json.dumps(manifest_data, indent=2),
+        content_type="application/manifest+json"
+    )
+
+def service_worker_view(request):
+    """Serve the Progressive Web App Service Worker from root origin URL."""
+    sw_path = os.path.join(settings.BASE_DIR, 'static', 'js', 'service-worker.js')
+    try:
+        with open(sw_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except Exception:
+        content = "console.warn('Service worker script unavailable');"
+    response = HttpResponse(content, content_type="application/javascript")
+    response['Service-Worker-Allowed'] = '/'
+    return response
+
+def offline_view(request):
+    """Public offline fallback view containing no sensitive or private data."""
+    return render(request, 'offline.html')
+
 
 def custom_login_view(request):
     if request.user.is_authenticated:

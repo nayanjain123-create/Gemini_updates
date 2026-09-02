@@ -1,6 +1,6 @@
-# Gemini Updates — Monthly Work Tracking & Compliance Reporting Portal
+# Gemini Insights — Monthly Work Tracking & Compliance Reporting Portal
 
-**Gemini Updates** is a production-ready internal work-tracking and compliance-reporting portal built using Python and Django. The system provides role-based access for **Boss** and **Employee** users, features a dynamic monthly daily report matrix, automates 15 monthly compliance items across 5 companies, tracks detailed audit histories, and offers persistent Light and Dark theme switching.
+**Gemini Insights** is a production-ready internal work-tracking and compliance-reporting portal built using Python and Django. The system provides role-based access for **Boss** and **Employee** users, features a dynamic monthly daily report matrix, automates 15 monthly compliance items across 5 companies, tracks detailed audit histories, and offers persistent Light and Dark theme switching.
 
 ---
 

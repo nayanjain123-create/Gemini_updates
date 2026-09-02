@@ -7,12 +7,12 @@ from compliance.views import ensure_compliance_items_exist
 from audit.models import AuditLog
 
 class Command(BaseCommand):
-    help = "Clears all test dummy data and leaves a single clean Boss account for production employee onboarding."
+    help = "Clears all test dummy data from daily reports, compliance items, tasks, and audit logs while preserving all 7 user accounts."
 
     def handle(self, *args, **options):
-        self.stdout.write("Clearing test data...")
+        self.stdout.write("Clearing test data from Daily Reports and Compliance...")
 
-        # Delete all test entries and logs
+        # 1. Delete all test report entries, comments, assigned tasks, and logs
         DailyTaskComment.objects.all().delete()
         DailyTaskReport.objects.all().delete()
         AssignedTask.objects.all().delete()
@@ -20,32 +20,42 @@ class Command(BaseCommand):
         ComplianceItem.objects.all().delete()
         AuditLog.objects.all().delete()
 
-        # Delete all test employee accounts except primary 'boss'
-        User.objects.exclude(username='boss').delete()
+        # 2. Ensure only the 7 requested user accounts exist and are active
+        ALLOWED_USERS = [
+            ('pratik', 'pratik123', 'Pratik', User.BOSS, True, True),
+            ('rachana', 'rachana123', 'Rachana', User.EMPLOYEE, False, False),
+            ('rupali', 'rupali123', 'Rupali', User.EMPLOYEE, False, False),
+            ('pawan', 'pawan123', 'Pawan', User.EMPLOYEE, False, False),
+            ('dhaval', 'dhaval123', 'Dhaval', User.EMPLOYEE, False, False),
+            ('hema', 'hema123', 'Hema', User.EMPLOYEE, False, False),
+            ('kshitija', 'kshitija123', 'Kshitija', User.EMPLOYEE, False, False),
+        ]
 
-        # Create or update primary Boss account
-        boss, created = User.objects.get_or_create(
-            username='boss',
-            defaults={
-                'email': 'boss@gemini.com',
-                'full_name': 'Boss Admin',
-                'role': User.BOSS,
-                'is_staff': True,
-                'is_superuser': True,
-                'is_active': True,
-            }
-        )
-        boss.set_password('boss123')
-        boss.role = User.BOSS
-        boss.is_staff = True
-        boss.is_superuser = True
-        boss.is_active = True
-        boss.full_name = boss.full_name or 'Boss Admin'
-        boss.save()
+        allowed_usernames = [u[0] for u in ALLOWED_USERS]
+        User.objects.exclude(username__in=allowed_usernames).delete()
 
-        # Initialize fresh compliance items for current month
+        for username, pwd, full_name, role, is_staff, is_superuser in ALLOWED_USERS:
+            user, _ = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'email': f'{username}@gemini.com',
+                    'full_name': full_name,
+                    'role': role,
+                }
+            )
+            user.full_name = full_name
+            user.email = f'{username}@gemini.com'
+            user.role = role
+            user.is_staff = is_staff
+            user.is_superuser = is_superuser
+            user.is_active = True
+            user.set_password(pwd)
+            user.save()
+
+        # 3. Initialize fresh, pending compliance items for current month
         today = timezone.now().date()
         ensure_compliance_items_exist(today.year, today.month)
 
-        self.stdout.write(self.style.SUCCESS("Successfully cleared all test data! Fresh application state ready for live employee usage."))
-        self.stdout.write(self.style.SUCCESS("Primary Boss Account: boss / boss123"))
+        self.stdout.write(self.style.SUCCESS("Successfully cleared daily reports, tasks, compliance history, and audit logs!"))
+        self.stdout.write(self.style.SUCCESS("Fresh application state ready for live production usage with all 7 user accounts intact."))
+
