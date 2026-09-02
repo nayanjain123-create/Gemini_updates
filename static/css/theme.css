@@ -878,10 +878,12 @@ html, body {
   min-width: 85px;
 }
 
-/* Theme Toggle Button Styling */
+/* Theme Toggle Button Styling (Border-less & Outline-less) */
 .theme-toggle-btn {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
   color: var(--text-main);
   border-radius: 50%;
   width: 38px;
@@ -892,16 +894,26 @@ html, body {
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   padding: 0;
-  box-shadow: var(--shadow-sm);
 }
 
 .theme-toggle-btn:hover {
-  background-color: var(--bg-hover);
-  transform: scale(1.05);
+  background-color: var(--bg-hover) !important;
+  transform: scale(1.1);
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.theme-toggle-btn:focus,
+.theme-toggle-btn:active,
+.theme-toggle-btn:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .theme-toggle-btn i {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 
 /* Mobile Adjustments (Screens <= 768px) */
