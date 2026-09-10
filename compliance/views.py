@@ -290,12 +290,13 @@ def compliance_mark_done_view(request, item_id):
         item.remarks = remarks
         item.save()
 
+    emp_name = request.user.full_name or request.user.username
     log_action(
         request.user,
         'COMPLIANCE_MARKED_DONE',
         'ComplianceItem',
         item.id,
-        f"Marked {item.get_company_display()} - {item.get_compliance_type_display()} ({item.month}/{item.year}) as Done."
+        f"{emp_name} completed compliance: {item.get_company_display()} - {item.get_compliance_type_display()} ({item.month}/{item.year})."
     )
     messages.success(request, f"Compliance item for {item.get_company_display()} ({item.get_compliance_type_display()}) successfully marked as DONE!")
     return redirect(request.META.get('HTTP_REFERER', 'compliance:compliance_report'))
@@ -331,12 +332,13 @@ def compliance_mark_na_view(request, item_id):
         item.remarks = remarks
         item.save()
 
+    emp_name = request.user.full_name or request.user.username
     log_action(
         request.user,
         'COMPLIANCE_MARKED_NA',
         'ComplianceItem',
         item.id,
-        f"Marked {item.get_company_display()} - {item.get_compliance_type_display()} ({item.month}/{item.year}) as N/A."
+        f"{emp_name} marked compliance as N/A: {item.get_company_display()} - {item.get_compliance_type_display()} ({item.month}/{item.year})."
     )
     messages.info(request, f"Compliance item for {item.get_company_display()} ({item.get_compliance_type_display()}) marked as N/A.")
     return redirect(request.META.get('HTTP_REFERER', 'compliance:compliance_report'))

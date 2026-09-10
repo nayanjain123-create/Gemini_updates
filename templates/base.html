@@ -27,8 +27,58 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   
-  <!-- Custom Design System CSS -->
-  <link href="{% static 'css/theme.css' %}" rel="stylesheet">
+  <!-- Custom Design System CSS with cache buster -->
+  <link href="{% static 'css/theme.css' %}?v=20260910_7" rel="stylesheet">
+
+  <style>
+    /* Nav Icon Buttons: Grey Outline for Dark Theme, Black for Light Theme */
+    .nav-tools-container {
+      padding: 0.2rem 0.4rem;
+    }
+    .nav-icon-btn {
+      width: 40px !important;
+      height: 40px !important;
+      padding: 7px !important;
+      border-radius: 8px !important;
+      cursor: pointer;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-decoration: none !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Dark Theme: Grey Outline */
+    [data-theme="dark"] .nav-icon-btn {
+      border: 1.5px solid #64748B !important;
+      outline: 1px solid rgba(100, 116, 139, 0.45) !important;
+      background-color: rgba(30, 41, 59, 0.6) !important;
+    }
+    [data-theme="dark"] .nav-icon-btn:hover {
+      border-color: #94A3B8 !important;
+      outline: 1.5px solid rgba(148, 163, 184, 0.8) !important;
+      background-color: rgba(51, 65, 85, 0.8) !important;
+      box-shadow: 0 0 10px rgba(148, 163, 184, 0.25) !important;
+      transform: translateY(-1px);
+    }
+    /* Light Theme: Black Outline */
+    [data-theme="light"] .nav-icon-btn,
+    html:not([data-theme="dark"]) .nav-icon-btn {
+      border: 1.5px solid #000000 !important;
+      outline: 1px solid rgba(0, 0, 0, 0.25) !important;
+      background-color: #FFFFFF !important;
+    }
+    [data-theme="light"] .nav-icon-btn:hover,
+    html:not([data-theme="dark"]) .nav-icon-btn:hover {
+      border-color: #000000 !important;
+      outline: 2px solid #000000 !important;
+      background-color: #F1F5F9 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+      transform: translateY(-1px);
+    }
+    .nav-icon-btn.active {
+      background-color: rgba(99, 102, 241, 0.18) !important;
+    }
+  </style>
   
   <!-- Early Theme Script to prevent flash -->
   <script src="{% static 'js/theme.js' %}"></script>
@@ -47,8 +97,65 @@
         <span>Gemini Insights</span>
       </a>
 
-      <!-- Mobile Right Controls: Dark Theme Toggle between Brand and 3-Lines Button (Mobile Only) -->
+      <!-- Mobile Right Controls: Notification & Dark Theme Toggle (Mobile Only) -->
       <div class="d-flex align-items-center gap-2 d-lg-none ms-auto">
+        <!-- Mobile Notification Bell Dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm position-relative border-0 p-2" type="button" id="mobileNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+            <i class="bi bi-bell-fill fs-5 text-secondary"></i>
+            {% if unread_notifications_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+              {{ unread_notifications_count }}
+              <span class="visually-hidden">unread notifications</span>
+            </span>
+            {% endif %}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 notification-dropdown-menu" aria-labelledby="mobileNotifDropdown" style="width: 320px; max-width: 90vw; max-height: 420px; overflow-y: auto;">
+            <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+              <span class="fw-bold fs-6"><i class="bi bi-bell me-1 text-primary"></i> Notifications</span>
+              {% if unread_notifications_count > 0 %}
+              <a href="{% url 'reports:notification_mark_all_read' %}" class="small text-decoration-none fw-semibold text-primary">Mark all read</a>
+              {% endif %}
+            </li>
+            {% for n in recent_notifications %}
+            <li class="border-bottom">
+              <a href="{% if not n.is_read %}{% url 'reports:notification_mark_read' n.id %}{% elif n.related_task %}{% url 'reports:task_list' %}{% else %}#{% endif %}" class="dropdown-item p-3 text-wrap {% if not n.is_read %}bg-primary bg-opacity-10 fw-semibold{% endif %}">
+                <div class="d-flex align-items-start gap-2">
+                  <div class="mt-1">
+                    {% if n.notification_type == 'TASK_REALLOCATED' %}
+                      <span class="badge rounded-circle bg-warning text-dark p-2"><i class="bi bi-arrow-left-right"></i></span>
+                    {% elif n.notification_type == 'TASK_COMPLETED_WAITING_APPROVAL' %}
+                      <span class="badge rounded-circle bg-info text-white p-2"><i class="bi bi-hourglass-split"></i></span>
+                    {% elif n.notification_type == 'TASK_APPROVED' %}
+                      <span class="badge rounded-circle bg-success text-white p-2"><i class="bi bi-check-circle-fill"></i></span>
+                    {% elif n.notification_type == 'TASK_REVISION_REQUESTED' %}
+                      <span class="badge rounded-circle bg-danger text-white p-2"><i class="bi bi-exclamation-octagon-fill"></i></span>
+                    {% else %}
+                      <span class="badge rounded-circle bg-primary text-white p-2"><i class="bi bi-info-circle-fill"></i></span>
+                    {% endif %}
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between">
+                      <span class="small fw-bold text-body">{{ n.title }}</span>
+                      <span class="badge text-muted p-0" style="font-size: 0.7rem;">{{ n.created_at|timesince }} ago</span>
+                    </div>
+                    <p class="small text-muted mb-0 mt-1">{{ n.message }}</p>
+                  </div>
+                </div>
+              </a>
+            </li>
+            {% empty %}
+            <li class="p-4 text-center text-muted">
+              <i class="bi bi-bell-slash fs-2 d-block mb-1"></i>
+              <span class="small">No notifications yet</span>
+            </li>
+            {% endfor %}
+            <li class="p-2 text-center bg-body-tertiary">
+              <a href="{% url 'reports:task_list' %}" class="small text-decoration-none fw-bold text-primary">Go to Tasks Tab <i class="bi bi-arrow-right"></i></a>
+            </li>
+          </ul>
+        </div>
+
         <button class="theme-toggle-btn" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
           <i id="theme-toggle-icon-mobile" class="bi bi-moon-stars-fill"></i>
         </button>
@@ -61,6 +168,7 @@
       <div class="collapse navbar-collapse" id="navbarMain">
         <!-- Main Navigation Links (Dashboard, Daily Report, Compliance, Tasks, Sales, Purchase) -->
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-2 align-items-lg-center nav-buttons-group">
+          <!-- Main nav links -->
           <li class="nav-item">
             <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
               <i class="bi bi-grid-1x2-fill me-1"></i> Dashboard
@@ -81,20 +189,122 @@
               <i class="bi bi-list-check me-1"></i> Tasks
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link nav-link-custom text-success fw-semibold" href="https://gemini-sales-invoice-converter.vercel.app/" target="_blank" rel="noopener noreferrer" title="Sales Invoice Converter Tool">
-              <i class="bi bi-graph-up-arrow me-1"></i> Sales
+
+          <!-- Mobile Only external tool links -->
+          <li class="nav-item d-lg-none mt-2 pt-2 border-top">
+            <a class="nav-link nav-link-custom text-info" href="https://geminiexcel.streamlit.app/" target="_blank" rel="noopener noreferrer">
+              <i class="bi bi-bag-check-fill me-2"></i> Purchase Excel Tool
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link nav-link-custom text-info fw-semibold" href="https://geminiexcel.streamlit.app/" target="_blank" rel="noopener noreferrer" title="Purchase Excel Tool">
-              <i class="bi bi-bag-check-fill me-1"></i> Purchase
+          <li class="nav-item d-lg-none">
+            <a class="nav-link nav-link-custom text-success" href="https://gemini-sales-invoice-converter.vercel.app/" target="_blank" rel="noopener noreferrer">
+              <i class="bi bi-graph-up-arrow me-2"></i> Sales Invoice Converter
             </a>
           </li>
+          {% if user.is_boss %}
+          <li class="nav-item d-lg-none">
+            <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'accounts' and 'employee' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'accounts:employee_list' %}">
+              <i class="bi bi-people-fill me-2"></i> Employee Management
+            </a>
+          </li>
+          {% endif %}
         </ul>
 
-        <!-- Right Side Nav Utilities (Desktop Theme toggle & Profile) -->
+        <!-- Right Side Nav Utilities (Purchase, Sales, Employee Mgmt, Notifications, Theme toggle & Profile) -->
         <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3 nav-utilities-group">
+          <!-- Tools Group with dedicated padding and gap (Desktop) -->
+          <div class="d-none d-lg-flex align-items-center gap-2 gap-xl-3 px-2 py-1 nav-tools-container">
+            <!-- Purchase Tool Link (Desktop) -->
+            <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none" 
+               href="https://geminiexcel.streamlit.app/" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               title="Purchase Excel Tool" 
+               id="navPurchaseTool">
+              <i class="bi bi-bag-check-fill text-info fs-5"></i>
+            </a>
+
+            <!-- Sales Invoice Converter Tool Link (Desktop) -->
+            <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none" 
+               href="https://gemini-sales-invoice-converter.vercel.app/" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               title="Sales Invoice Converter Tool" 
+               id="navSalesTool">
+              <i class="bi bi-graph-up-arrow text-success fs-5"></i>
+            </a>
+
+            <!-- Employee Management Link (Desktop, Boss Only) -->
+            {% if user.is_boss %}
+            <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none {% if request.resolver_match.namespace == 'accounts' and 'employee' in request.resolver_match.url_name %}active text-primary{% endif %}" 
+               href="{% url 'accounts:employee_list' %}" 
+               title="Employee Management" 
+               id="navEmployeeMgmt">
+              <i class="bi bi-people-fill fs-5"></i>
+            </a>
+            {% endif %}
+          </div>
+
+          <span class="nav-divider d-none d-lg-inline-block" style="width:1px;height:24px;background:var(--border-color);opacity:.6;display:inline-block;vertical-align:middle;margin:0 4px;"></span>
+
+          <!-- Desktop Notifications Dropdown -->
+          <div class="dropdown d-none d-lg-block">
+            <button class="btn btn-outline-secondary btn-sm position-relative border-0 p-2" type="button" id="desktopNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+              <i class="bi bi-bell-fill fs-5"></i>
+              {% if unread_notifications_count > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.65rem;">
+                {{ unread_notifications_count }}
+                <span class="visually-hidden">unread notifications</span>
+              </span>
+              {% endif %}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 notification-dropdown-menu" aria-labelledby="desktopNotifDropdown" style="width: 360px; max-height: 460px; overflow-y: auto;">
+              <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                <span class="fw-bold fs-6"><i class="bi bi-bell-fill me-1 text-primary"></i> Notifications</span>
+                {% if unread_notifications_count > 0 %}
+                <a href="{% url 'reports:notification_mark_all_read' %}" class="small text-decoration-none fw-semibold text-primary">Mark all read</a>
+                {% endif %}
+              </li>
+
+              {% for n in recent_notifications %}
+              <li class="border-bottom">
+                <a href="{% if not n.is_read %}{% url 'reports:notification_mark_read' n.id %}{% elif n.related_task %}{% url 'reports:task_list' %}{% else %}#{% endif %}" class="dropdown-item p-3 text-wrap {% if not n.is_read %}bg-primary bg-opacity-10 fw-semibold{% endif %}">
+                  <div class="d-flex align-items-start gap-2">
+                    <div class="mt-1">
+                      {% if n.notification_type == 'TASK_REALLOCATED' %}
+                        <span class="badge rounded-circle bg-warning text-dark p-2"><i class="bi bi-arrow-left-right"></i></span>
+                      {% elif n.notification_type == 'TASK_COMPLETED_WAITING_APPROVAL' %}
+                        <span class="badge rounded-circle bg-info text-white p-2"><i class="bi bi-hourglass-split"></i></span>
+                      {% elif n.notification_type == 'TASK_APPROVED' %}
+                        <span class="badge rounded-circle bg-success text-white p-2"><i class="bi bi-check-circle-fill"></i></span>
+                      {% elif n.notification_type == 'TASK_REVISION_REQUESTED' %}
+                        <span class="badge rounded-circle bg-danger text-white p-2"><i class="bi bi-exclamation-octagon-fill"></i></span>
+                      {% else %}
+                        <span class="badge rounded-circle bg-primary text-white p-2"><i class="bi bi-info-circle-fill"></i></span>
+                      {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between">
+                        <span class="small fw-bold text-body">{{ n.title }}</span>
+                        <span class="badge text-muted p-0" style="font-size: 0.7rem;">{{ n.created_at|timesince }} ago</span>
+                      </div>
+                      <p class="small text-muted mb-0 mt-1">{{ n.message }}</p>
+                    </div>
+                  </div>
+                </a>
+              </li>
+              {% empty %}
+              <li class="p-4 text-center text-muted">
+                <i class="bi bi-bell-slash fs-2 d-block mb-1 opacity-50"></i>
+                <span class="small">No notifications yet</span>
+              </li>
+              {% endfor %}
+              <li class="p-2 text-center bg-body-tertiary">
+                <a href="{% url 'reports:task_list' %}" class="small text-decoration-none fw-bold text-primary">Go to Tasks Tab <i class="bi bi-arrow-right"></i></a>
+              </li>
+            </ul>
+          </div>
+
           <!-- Desktop Theme Toggle Switch -->
           <button id="theme-toggle" class="theme-toggle-btn d-none d-lg-inline-flex" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
             <i id="theme-toggle-icon" class="bi bi-moon-stars-fill"></i>
@@ -193,20 +403,1181 @@
     })();
   </script>
 
-  <!-- Progressive Web App Service Worker Registration -->
+  <!-- Progressive Web App Service Worker Registration + Browser Push Notifications -->
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(function(reg) {
-            console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
-          })
-          .catch(function(error) {
-            console.warn('[PWA] Service worker registration failed:', error);
+    (function() {
+      'use strict';
+
+      // ── 1. Register Service Worker ──────────────────────────────────────────
+      let swRegistration = null;
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(reg) {
+              swRegistration = reg;
+              console.log('[PWA] ServiceWorker registered, scope:', reg.scope);
+              // After SW is ready, request notification permission
+              requestBrowserNotificationPermission();
+            })
+            .catch(function(error) {
+              console.warn('[PWA] Service worker registration failed:', error);
+            });
+        });
+      }
+
+      {% if user.is_authenticated %}
+      // ── 2. Request Notification Permission ─────────────────────────────────
+      // We ask once and quietly – the browser only shows the prompt if the user
+      // hasn't decided yet. If they already granted/denied, nothing happens.
+      function requestBrowserNotificationPermission() {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'granted') {
+          startNotificationPolling();
+          return;
+        }
+        if (Notification.permission === 'denied') return;
+
+        // Show a soft prompt after 3 s to let the page load first
+        setTimeout(function() {
+          Notification.requestPermission().then(function(permission) {
+            if (permission === 'granted') {
+              console.log('[Notif] Browser notifications granted.');
+              startNotificationPolling();
+            }
           });
-      });
-    }
+        }, 3000);
+      }
+
+      // ── 3. Poll for New Notifications & Fire Browser Push via SW ───────────
+      let _lastSeenNotifId = null;
+      let _pollingIntervalId = null;
+
+      function startNotificationPolling() {
+        if (_pollingIntervalId) return; // already running
+        // Poll every 30 seconds
+        _pollingIntervalId = setInterval(pollForNewNotifications, 30000);
+        // Also run immediately once
+        pollForNewNotifications();
+      }
+
+      function pollForNewNotifications() {
+        fetch('/notifications/api/latest/', {
+          credentials: 'same-origin',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(res) { return res.ok ? res.json() : null; })
+        .then(function(data) {
+          if (!data || !data.latest) return;
+          const notif = data.latest;
+          // Only fire if this is a brand-new notification we haven't shown yet
+          if (_lastSeenNotifId === notif.id) return;
+          _lastSeenNotifId = notif.id;
+          fireBrowserNotification(notif);
+        })
+        .catch(function() { /* silently ignore network errors */ });
+      }
+
+      function fireBrowserNotification(notif) {
+        if (Notification.permission !== 'granted') return;
+
+        const icon = '/static/pwa/icons/icon-192x192.png';
+        const badge = '/static/pwa/icons/favicon-32x32.png';
+
+        // Prefer posting to service worker so it works even when page is in background
+        if (swRegistration && swRegistration.active) {
+          swRegistration.active.postMessage({
+            type: 'SHOW_NOTIFICATION',
+            title: 'Gemini Insights',
+            body: notif.title,
+            icon: icon,
+            badge: badge,
+            tag: 'gemini-notif-' + notif.id,
+            url: '/tasks/'
+          });
+        } else {
+          // Fallback: direct Notification API (visible only when tab is active/focused)
+          try {
+            new Notification('Gemini Insights', {
+              body: notif.title,
+              icon: icon,
+              badge: badge,
+              tag: 'gemini-notif-' + notif.id,
+              renotify: true
+            });
+          } catch (e) {
+            console.warn('[Notif] Notification API error:', e);
+          }
+        }
+      }
+
+      // Expose so other scripts can start polling immediately if needed
+      window.geminiStartNotifPolling = function() {
+        if (Notification.permission === 'granted') startNotificationPolling();
+      };
+      {% endif %}
+    })();
   </script>
+
+  {% if user.is_authenticated and user.is_boss %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <!-- Universal Command Palette Modal (Boss Only) -->
+  <div id="cmdPaletteBackdrop" class="cmd-palette-backdrop" style="display: none !important;" role="dialog" aria-modal="true" aria-label="Command Palette">
+    <div class="cmd-palette-container" id="cmdPaletteContainer">
+      <!-- Search Bar Header -->
+      <div class="cmd-palette-header">
+        <i class="bi bi-search text-primary fs-5"></i>
+        <input type="text" 
+               id="cmdPaletteInput" 
+               class="cmd-palette-input" 
+               placeholder="Search employee, company (GI, LLP...), 'report', 'compliance', or 'tasks'..." 
+               autocomplete="off" 
+               spellcheck="false">
+        <button type="button" class="btn btn-sm btn-link text-muted p-1 d-none" id="cmdPaletteClearBtn" title="Clear Search">
+          <i class="bi bi-x-circle-fill fs-5"></i>
+        </button>
+        <div id="cmdPaletteSpinner" class="spinner-border spinner-border-sm text-primary d-none ms-1" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <button type="button" class="btn-close ms-2" id="cmdPaletteCloseBtn" aria-label="Close"></button>
+      </div>
+
+      <!-- Scrollable Results Container -->
+      <div class="cmd-palette-body" id="cmdPaletteResults">
+        <!-- Loaded via AJAX / Search Prompt -->
+      </div>
+
+      <!-- Palette Footer with Keyboard Hints -->
+      <div class="cmd-palette-footer">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span><kbd class="palette-kbd">↑</kbd> <kbd class="palette-kbd">↓</kbd> navigate</span>
+          <span><kbd class="palette-kbd">↵</kbd> select</span>
+          <span><kbd class="palette-kbd">esc</kbd> close</span>
+        </div>
+        <div class="d-none d-sm-flex align-items-center text-muted small">
+          <i class="bi bi-shield-lock-fill text-warning me-1"></i> Boss Executive Command
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const backdrop = document.getElementById('cmdPaletteBackdrop');
+      const container = document.getElementById('cmdPaletteContainer');
+      const input = document.getElementById('cmdPaletteInput');
+      const spinner = document.getElementById('cmdPaletteSpinner');
+      const results = document.getElementById('cmdPaletteResults');
+      const closeBtn = document.getElementById('cmdPaletteCloseBtn');
+      const clearBtn = document.getElementById('cmdPaletteClearBtn');
+
+      let debounceTimer = null;
+      let activeIndex = -1;
+      let paletteCharts = {};
+
+      function destroyPaletteCharts() {
+        Object.keys(paletteCharts).forEach(key => {
+          if (paletteCharts[key]) {
+            try { paletteCharts[key].destroy(); } catch(e) {}
+            delete paletteCharts[key];
+          }
+        });
+      }
+
+      function getChartTheme() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+          textColor: isDark ? '#94a3b8' : '#64748b',
+          gridColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        };
+      }
+
+      function showInitialSearchPrompt() {
+        destroyPaletteCharts();
+        results.innerHTML = `
+          <div class="text-center py-5 px-3">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 shadow-sm" style="width: 64px; height: 64px;">
+              <i class="bi bi-search fs-3"></i>
+            </div>
+            <h5 class="fw-bold text-body mb-1">Executive Operations Command</h5>
+            <p class="text-muted small mx-auto mb-4" style="max-width: 520px;">
+              Type in the search bar above to generate real-time compliance charts, daily reports, and team workload analytics.
+            </p>
+
+            <div class="p-3 rounded bg-body-tertiary border mb-4 text-start mx-auto" style="max-width: 760px;">
+              <div class="small fw-bold text-muted mb-2"><i class="bi bi-building me-1 text-primary"></i> Company Statutory Radar (Click to View Compliance Charts):</div>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="cmd-chip" onclick="window.cmdRunQuery('gi')"><i class="bi bi-building"></i> GI (Gemini Insights)</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('llp')"><i class="bi bi-building"></i> LLP (Gemini LLP)</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('huf')"><i class="bi bi-building"></i> HUF (Gemini HUF)</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('international')"><i class="bi bi-building"></i> International</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('gtw')"><i class="bi bi-building"></i> GTW (Trading)</span>
+              </div>
+
+              <div class="small fw-bold text-muted mb-2"><i class="bi bi-bar-chart-line-fill me-1 text-success"></i> Instant Operations & Reports:</div>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="cmd-chip" onclick="window.cmdRunQuery('compliance')"><i class="bi bi-clipboard-check-fill text-success"></i> Monthly Compliance Snapshot (All 5 Companies)</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('report')"><i class="bi bi-calendar-check text-info"></i> Today's Daily Reports (Submitted vs Missing)</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('tasks')"><i class="bi bi-list-check text-warning"></i> Tasks & Sign-Offs Awaiting Approval</span>
+              </div>
+
+              <div class="small fw-bold text-muted mb-2"><i class="bi bi-people-fill me-1 text-info"></i> Team Members (Workload & Reports):</div>
+              <div class="d-flex flex-wrap gap-2">
+                <span class="cmd-chip" onclick="window.cmdRunQuery('hema')"><i class="bi bi-person-fill"></i> Hema</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('ankit')"><i class="bi bi-person-fill"></i> Ankit</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('dhaval')"><i class="bi bi-person-fill"></i> Dhaval</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('mitali')"><i class="bi bi-person-fill"></i> Mitali</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('rupali')"><i class="bi bi-person-fill"></i> Rupali</span>
+                <span class="cmd-chip" onclick="window.cmdRunQuery('rachana')"><i class="bi bi-person-fill"></i> Rachana</span>
+              </div>
+            </div>
+
+            <div class="text-muted small">
+              <kbd class="palette-kbd">Esc</kbd> to close &bull; <kbd class="palette-kbd">&uarr; / &darr;</kbd> to navigate
+            </div>
+          </div>
+        `;
+      }
+
+      function openPalette() {
+        if (!backdrop) return;
+        backdrop.style.setProperty('display', 'flex', 'important');
+        backdrop.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        input.value = '';
+        if (clearBtn) clearBtn.classList.add('d-none');
+        input.focus();
+        showInitialSearchPrompt();
+      }
+
+      function closePalette() {
+        if (!backdrop) return;
+        backdrop.classList.remove('show');
+        backdrop.style.setProperty('display', 'none', 'important');
+        document.body.style.overflow = '';
+        activeIndex = -1;
+        destroyPaletteCharts();
+      }
+
+      if (closeBtn) closeBtn.addEventListener('click', closePalette);
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+          input.value = '';
+          clearBtn.classList.add('d-none');
+          input.focus();
+          showInitialSearchPrompt();
+        });
+      }
+
+      if (backdrop) {
+        backdrop.addEventListener('click', function(e) {
+          if (e.target === backdrop) {
+            closePalette();
+          }
+        });
+      }
+
+      // Global Keyboard Shortcut: Ctrl + K or Cmd + K
+      window.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+          e.preventDefault();
+          if (backdrop && backdrop.classList.contains('show')) {
+            closePalette();
+          } else {
+            openPalette();
+          }
+        } else if (e.key === 'Escape' && backdrop && backdrop.classList.contains('show')) {
+          closePalette();
+        } else if (backdrop && backdrop.classList.contains('show')) {
+          handleKeyboardNavigation(e);
+        }
+      });
+
+      function handleKeyboardNavigation(e) {
+        const navItems = results.querySelectorAll('.cmd-nav-item');
+        if (!navItems.length) return;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          activeIndex = (activeIndex + 1) % navItems.length;
+          updateActiveItem(navItems);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeIndex = (activeIndex - 1 + navItems.length) % navItems.length;
+          updateActiveItem(navItems);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (activeIndex >= 0 && activeIndex < navItems.length) {
+            navItems[activeIndex].click();
+          }
+        }
+      }
+
+      function updateActiveItem(items) {
+        items.forEach((item, idx) => {
+          if (idx === activeIndex) {
+            item.classList.add('keyboard-active');
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          } else {
+            item.classList.remove('keyboard-active');
+          }
+        });
+      }
+
+      // Live search typing with debouncing
+      if (input) {
+        input.addEventListener('input', function() {
+          const val = input.value.trim();
+          if (clearBtn) {
+            if (val.length > 0) clearBtn.classList.remove('d-none');
+            else clearBtn.classList.add('d-none');
+          }
+          clearTimeout(debounceTimer);
+          if (!val) {
+            showInitialSearchPrompt();
+            return;
+          }
+          debounceTimer = setTimeout(function() {
+            fetchResults(val);
+          }, 140);
+        });
+      }
+
+      function fetchResults(query) {
+        if (spinner) spinner.classList.remove('d-none');
+        activeIndex = -1;
+
+        fetch('/api/command-palette/?q=' + encodeURIComponent(query))
+          .then(res => {
+            if (!res.ok) throw new Error('API error');
+            return res.json();
+          })
+          .then(data => {
+            if (spinner) spinner.classList.add('d-none');
+            renderPaletteData(data);
+          })
+          .catch(err => {
+            if (spinner) spinner.classList.add('d-none');
+            results.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-exclamation-triangle text-warning fs-3 d-block mb-2"></i>Failed to fetch command palette data.</div>';
+          });
+      }
+
+      function renderPaletteData(data) {
+        destroyPaletteCharts();
+        if (data.mode === 'default') {
+          renderDefaultView(data);
+        } else {
+          renderSearchView(data);
+        }
+      }
+
+      // Default View (Executive Cockpit with Interactive Charts)
+      function renderDefaultView(data) {
+        let html = '';
+
+        // 1. Executive Operations Header
+        html += `
+          <div class="cmd-item-card bg-primary bg-opacity-10 border-primary border-opacity-25 mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div>
+                <span class="fw-bold fs-6 text-primary"><i class="bi bi-speedometer2 me-1"></i> Executive Operations Command</span>
+                <div class="text-muted small">${data.today} &bull; Statutory Period: <strong>${data.compliance_period}</strong></div>
+              </div>
+              <div class="d-flex gap-2">
+                <span class="badge ${data.stats.submitted_today === data.stats.active_employees ? 'bg-success' : 'bg-warning text-dark'} p-2">
+                  ${data.stats.submitted_today} / ${data.stats.active_employees} Reports Today
+                </span>
+                ${data.stats.waiting_approval_tasks > 0 ? `<span class="badge bg-danger p-2">${data.stats.waiting_approval_tasks} Tasks Awaiting Approval</span>` : ''}
+              </div>
+            </div>
+            ${data.stats.pending_employees.length > 0 ? `
+              <div class="mt-2 pt-2 border-top border-primary border-opacity-25 small text-muted">
+                <span class="text-danger fw-semibold"><i class="bi bi-clock-history me-1"></i> Pending Daily Reports:</span>
+                ${data.stats.pending_employees.map(name => `<span class="badge bg-body-secondary text-body border me-1">${name}</span>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+
+        // 2. Executive WOW Charts Row 1
+        html += `
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-7">
+              <div class="cmd-chart-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-bold small text-body"><i class="bi bi-bar-chart-fill text-primary me-1"></i> 5-Company Statutory Compliance</span>
+                  <span class="badge bg-primary-subtle text-primary small">Done vs Pending</span>
+                </div>
+                <div class="cmd-chart-container">
+                  <canvas id="cmdChartDefaultComp"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-5">
+              <div class="cmd-chart-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-bold small text-body"><i class="bi bi-pie-chart-fill text-info me-1"></i> Today's Report Rate</span>
+                  <span class="badge ${data.stats.submitted_today === data.stats.active_employees ? 'bg-success' : 'bg-warning text-dark'} small">
+                    ${data.stats.active_employees > 0 ? Math.round(data.stats.submitted_today / data.stats.active_employees * 100) : 0}% Done
+                  </span>
+                </div>
+                <div class="cmd-chart-container">
+                  <canvas id="cmdChartDefaultDonut"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // 3. Executive WOW Charts Row 2: Team Workload
+        if (data.charts && data.charts.workload && data.charts.workload.labels.length > 0) {
+          html += `
+            <div class="cmd-chart-card mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold small text-body"><i class="bi bi-layers-fill text-purple me-1"></i> Team Workload & Task Distribution</span>
+                <span class="small text-muted">Pending &bull; Waiting Approval &bull; Approved</span>
+              </div>
+              <div class="cmd-chart-container-sm">
+                <canvas id="cmdChartDefaultWorkload"></canvas>
+              </div>
+            </div>
+          `;
+        }
+
+        // 4. Quick Company Chips
+        if (data.companies && data.companies.length > 0) {
+          html += '<div class="cmd-section-title">Companies (Click to inspect statutory returns & charts)</div>';
+          html += '<div class="d-flex flex-wrap gap-2 mb-3">';
+          data.companies.forEach(comp => {
+            html += `<span class="cmd-chip" onclick="window.cmdRunQuery('${comp.query}')"><i class="bi bi-building"></i> ${comp.name}</span>`;
+          });
+          html += '</div>';
+        }
+
+        // 5. Quick Employee Chips
+        if (data.employees && data.employees.length > 0) {
+          html += '<div class="cmd-section-title">Active Employees (Click to inspect workload & report)</div>';
+          html += '<div class="d-flex flex-wrap gap-2 mb-3">';
+          data.employees.forEach(emp => {
+            html += `<span class="cmd-chip" onclick="window.cmdRunQuery('${emp.query}')"><i class="bi bi-person-fill"></i> ${emp.name}</span>`;
+          });
+          html += '</div>';
+        }
+
+        // 6. Quick Suggestions
+        html += '<div class="cmd-section-title">Quick Actions & Shortcuts</div>';
+        data.quick_suggestions.forEach(item => {
+          html += `
+            <div class="cmd-suggestion-row cmd-nav-item" onclick="window.cmdRunQuery('${item.query}')">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi ${item.icon} text-primary fs-5"></i>
+                <div>
+                  <div class="fw-semibold text-body">${item.label}</div>
+                  <div class="small text-muted">${item.desc}</div>
+                </div>
+              </div>
+              <span class="badge ${item.badge_class}">${item.badge}</span>
+            </div>
+          `;
+        });
+
+        results.innerHTML = html;
+
+        // Initialize Charts with requestAnimationFrame
+        setTimeout(() => {
+          if (typeof Chart === 'undefined') return;
+          const theme = getChartTheme();
+
+          // A. 5-Company Statutory Compliance Chart
+          const compCanvas = document.getElementById('cmdChartDefaultComp');
+          if (compCanvas && data.charts && data.charts.compliance) {
+            paletteCharts['defaultComp'] = new Chart(compCanvas, {
+              type: 'bar',
+              data: {
+                labels: data.charts.compliance.labels,
+                datasets: [
+                  {
+                    label: 'Completed',
+                    data: data.charts.compliance.done,
+                    backgroundColor: '#10b981',
+                    borderRadius: 6,
+                    barPercentage: 0.65,
+                  },
+                  {
+                    label: 'Pending',
+                    data: data.charts.compliance.pending,
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 6,
+                    barPercentage: 0.65,
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                    labels: { color: theme.textColor, font: { family: theme.fontFamily, size: 11 } }
+                  }
+                },
+                scales: {
+                  x: {
+                    grid: { display: false },
+                    ticks: { color: theme.textColor, font: { family: theme.fontFamily, weight: 'bold' } }
+                  },
+                  y: {
+                    grid: { color: theme.gridColor },
+                    ticks: { color: theme.textColor, stepSize: 1, beginAtZero: true }
+                  }
+                }
+              }
+            });
+          }
+
+          // B. Daily Reports Filing Donut Chart
+          const donutCanvas = document.getElementById('cmdChartDefaultDonut');
+          if (donutCanvas && data.charts && data.charts.daily_donut) {
+            paletteCharts['defaultDonut'] = new Chart(donutCanvas, {
+              type: 'doughnut',
+              data: {
+                labels: ['Submitted', 'Pending'],
+                datasets: [{
+                  data: [data.charts.daily_donut.submitted, data.charts.daily_donut.pending],
+                  backgroundColor: ['#10b981', '#ef4444'],
+                  borderWidth: 0,
+                  hoverOffset: 6
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { color: theme.textColor, font: { family: theme.fontFamily, size: 11 } }
+                  }
+                }
+              }
+            });
+          }
+
+          // C. Team Workload Horizontal Stacked Bar
+          const workloadCanvas = document.getElementById('cmdChartDefaultWorkload');
+          if (workloadCanvas && data.charts && data.charts.workload) {
+            paletteCharts['defaultWorkload'] = new Chart(workloadCanvas, {
+              type: 'bar',
+              data: {
+                labels: data.charts.workload.labels,
+                datasets: [
+                  {
+                    label: 'Pending',
+                    data: data.charts.workload.pending,
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 4,
+                  },
+                  {
+                    label: 'Waiting Approval',
+                    data: data.charts.workload.waiting,
+                    backgroundColor: '#8b5cf6',
+                    borderRadius: 4,
+                  },
+                  {
+                    label: 'Approved',
+                    data: data.charts.workload.approved,
+                    backgroundColor: '#10b981',
+                    borderRadius: 4,
+                  }
+                ]
+              },
+              options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    stacked: true,
+                    grid: { color: theme.gridColor },
+                    ticks: { color: theme.textColor, stepSize: 1, beginAtZero: true }
+                  },
+                  y: {
+                    stacked: true,
+                    grid: { display: false },
+                    ticks: { color: theme.textColor, font: { family: theme.fontFamily, weight: 'bold' } }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    position: 'top',
+                    labels: { color: theme.textColor, font: { family: theme.fontFamily, size: 11 } }
+                  }
+                }
+              }
+            });
+          }
+        }, 40);
+      }
+
+      // Search View (Visual & WOW Interactive Results)
+      function renderSearchView(data) {
+        let html = '';
+        let hasAnyResults = false;
+        const chartsToInit = [];
+
+        // 1. Matched Company Compliances with Chart
+        if (data.company) {
+          hasAnyResults = true;
+          const c = data.company;
+          html += `
+            <div class="cmd-section-title">
+              <span><i class="bi bi-building text-primary me-1"></i> Company Compliance — ${c.name} (${c.month_name} ${c.year})</span>
+              <span class="badge ${c.completed_count === c.total && c.total > 0 ? 'bg-success' : 'bg-primary'}">${c.completed_count} / ${c.total} Done</span>
+            </div>
+            <div class="cmd-item-card mb-3 p-3">
+              <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <div>
+                  <span class="fs-5 fw-bold text-body"><i class="bi bi-building text-primary me-2"></i>${c.name}</span>
+                  <span class="text-muted small ms-2">&bull; ${c.month_name} ${c.year} Statutory Filings</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge ${c.completed_count === c.total && c.total > 0 ? 'bg-success' : 'bg-warning text-dark'} px-2 py-1">
+                    ${c.completed_count} / ${c.total} Done (${c.total > 0 ? Math.round(c.completed_count / c.total * 100) : 0}%)
+                  </span>
+                  <a href="${c.matrix_url}" class="btn btn-sm btn-outline-primary py-1 px-3 fw-semibold cmd-nav-item">
+                    Open in Matrix <i class="bi bi-arrow-right ms-1"></i>
+                  </a>
+                </div>
+              </div>
+
+              <div class="row g-4 align-items-center">
+                <!-- Donut Chart Left Column -->
+                <div class="col-12 col-md-5 text-center">
+                  <div class="p-3 rounded bg-body-tertiary border">
+                    <div style="position: relative; height: 180px; width: 100%;">
+                      <canvas id="cmdCompanyChart"></canvas>
+                    </div>
+                    <div class="small fw-bold mt-2 ${c.completed_count === c.total && c.total > 0 ? 'text-success' : 'text-primary'}">
+                      ${c.completed_count} Filed &bull; ${c.pending_count} Pending
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Filing Status Right Column -->
+                <div class="col-12 col-md-7">
+                  <div class="small fw-bold text-muted mb-2"><i class="bi bi-card-checklist me-1 text-primary"></i> Statutory Returns Breakdown:</div>
+                  
+                  <!-- Completed items -->
+                  ${c.completed.length > 0 ? `
+                    <div class="d-flex flex-column gap-2 mb-2">
+                      ${c.completed.map(item => `
+                        <div class="p-2 px-3 rounded bg-success bg-opacity-10 border border-success border-opacity-25 d-flex justify-content-between align-items-center small">
+                          <div>
+                            <div class="fw-bold text-success"><i class="bi bi-check-circle-fill me-1"></i> ${item.compliance_type}</div>
+                            <div class="text-muted" style="font-size:0.75rem;">Filed by <strong>${item.completed_by || 'Staff'}</strong> on ${item.completed_at || 'Recently'}</div>
+                            ${item.reference_number ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size:0.68rem;">Challan: ${item.reference_number}</span>` : ''}
+                          </div>
+                          <span class="badge bg-success">FILED</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+
+                  <!-- Pending items -->
+                  ${c.pending.length > 0 ? `
+                    <div class="d-flex flex-column gap-2">
+                      ${c.pending.map(item => `
+                        <div class="p-2 px-3 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex justify-content-between align-items-center small">
+                          <div>
+                            <div class="fw-bold text-warning-emphasis"><i class="bi bi-clock-history me-1"></i> ${item.compliance_type}</div>
+                            <div class="text-muted" style="font-size:0.75rem;">Due for ${c.month_name} ${c.year} &bull; Statutory Deadline</div>
+                          </div>
+                          <span class="badge bg-warning text-dark">PENDING</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+
+                  ${c.completed.length === 0 && c.pending.length === 0 ? `
+                    <div class="p-3 rounded bg-body-tertiary border text-center text-muted small">
+                      No statutory compliance records found for this period.
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+
+          chartsToInit.push(() => {
+            const canvas = document.getElementById('cmdCompanyChart');
+            if (canvas && typeof Chart !== 'undefined') {
+              const theme = getChartTheme();
+              paletteCharts['companyChart'] = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                  labels: ['Completed', 'Pending'],
+                  datasets: [{
+                    data: [c.completed_count, c.pending_count],
+                    backgroundColor: ['#10b981', '#f59e0b'],
+                    borderWidth: 0,
+                    hoverOffset: 6
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  cutout: '68%',
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: { color: theme.textColor, font: { family: theme.fontFamily, size: 11 } }
+                    }
+                  }
+                }
+              });
+            }
+          });
+        }
+
+        // 2. Full Compliance Snapshot ("compliance", "tax", "gst", "tds") with Visual Comparison Graph
+        if (data.compliance) {
+          hasAnyResults = true;
+          const comp = data.compliance;
+          html += `
+            <div class="cmd-section-title">
+              <span><i class="bi bi-clipboard-check-fill text-primary me-1"></i> Monthly Compliance Overview (${comp.month_name} ${comp.year})</span>
+              <span class="badge bg-primary">${comp.completed_count} / ${comp.total} Completed (${comp.completion_pct}%)</span>
+            </div>
+
+            <!-- Visual Comparison Bar Chart across companies -->
+            <div class="cmd-chart-card mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold small text-body"><i class="bi bi-bar-chart-line-fill text-success me-1"></i> 5-Company Completion Breakdown</span>
+                <a href="${comp.matrix_url}" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold cmd-nav-item">
+                  Open Matrix <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+              <div class="cmd-chart-container">
+                <canvas id="cmdComplianceBarChart"></canvas>
+              </div>
+            </div>
+
+            <div class="cmd-item-card mb-3">
+              <div class="row g-2">
+                ${comp.companies.map(c => `
+                  <div class="col-12 col-md-6">
+                    <div class="p-2 rounded bg-body-tertiary border small h-100">
+                      <div class="d-flex justify-content-between fw-bold mb-1">
+                        <span>${c.name}</span>
+                        <span class="badge ${c.completed.length === (c.completed.length + c.pending.length) && c.completed.length > 0 ? 'bg-success' : 'bg-secondary'}">
+                          ${c.completed.length} / ${c.completed.length + c.pending.length} Done
+                        </span>
+                      </div>
+                      ${c.completed.length > 0 ? `
+                        <div class="text-success small mb-1">
+                          <i class="bi bi-check me-1"></i> Done: ${c.completed.map(x => `<strong>${x.type}</strong> (${x.completed_by || 'Staff'})`).join(', ')}
+                        </div>
+                      ` : ''}
+                      ${c.pending.length > 0 ? `
+                        <div class="text-warning small">
+                          <i class="bi bi-hourglass-split me-1"></i> Pending: ${c.pending.map(x => x.type).join(', ')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+
+          chartsToInit.push(() => {
+            const canvas = document.getElementById('cmdComplianceBarChart');
+            if (canvas && typeof Chart !== 'undefined') {
+              const theme = getChartTheme();
+              const compLabels = comp.companies.map(c => c.code);
+              const compDone = comp.companies.map(c => c.completed.length);
+              const compPending = comp.companies.map(c => c.pending.length);
+
+              paletteCharts['compBar'] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                  labels: compLabels,
+                  datasets: [
+                    {
+                      label: 'Completed',
+                      data: compDone,
+                      backgroundColor: '#10b981',
+                      borderRadius: 6,
+                      barPercentage: 0.65,
+                    },
+                    {
+                      label: 'Pending',
+                      data: compPending,
+                      backgroundColor: '#f59e0b',
+                      borderRadius: 6,
+                      barPercentage: 0.65,
+                    }
+                  ]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'top',
+                      labels: { color: theme.textColor, font: { family: theme.fontFamily, size: 11 } }
+                    }
+                  },
+                  scales: {
+                    x: {
+                      grid: { display: false },
+                      ticks: { color: theme.textColor, font: { family: theme.fontFamily, weight: 'bold' } }
+                    },
+                    y: {
+                      grid: { color: theme.gridColor },
+                      ticks: { color: theme.textColor, stepSize: 1, beginAtZero: true }
+                    }
+                  }
+                }
+              });
+            }
+          });
+        }
+
+        // 3. Daily Report Overview ("report", "daily", "today", "missing") with Doughnut Chart
+        if (data.report) {
+          hasAnyResults = true;
+          const r = data.report;
+          html += `
+            <div class="cmd-section-title">
+              <span><i class="bi bi-calendar-check text-primary me-1"></i> Today's Daily Reports Overview — ${r.date}</span>
+              <span class="badge ${r.submitted_count === r.total_employees ? 'bg-success' : 'bg-warning text-dark'}">${r.submitted_count} / ${r.total_employees} Submitted (${r.submission_rate}%)</span>
+            </div>
+
+            <!-- Visual Donut & Quick Links -->
+            <div class="cmd-chart-card mb-3">
+              <div class="row g-3 align-items-center">
+                <div class="col-12 col-md-4">
+                  <div class="cmd-chart-container-sm">
+                    <canvas id="cmdReportDonutChart"></canvas>
+                  </div>
+                  <div class="text-center small fw-bold mt-1 text-primary">
+                    ${r.submission_rate}% Submissions Received
+                  </div>
+                </div>
+                <div class="col-12 col-md-8">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold small text-muted">Direct Matrix Portals:</span>
+                    <div class="d-flex gap-2">
+                      <a href="${r.matrix_url}" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold cmd-nav-item">
+                        Daily Matrix <i class="bi bi-arrow-right"></i>
+                      </a>
+                      <a href="${r.missing_url}" class="btn btn-sm btn-outline-danger py-0 px-2 fw-semibold cmd-nav-item">
+                        Missing Reports <i class="bi bi-arrow-right"></i>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Pending Employees Who Have Not Submitted -->
+                  <div>
+                    <span class="text-danger fw-bold small d-block mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Not Yet Submitted Today (${r.pending.length}):</span>
+                    ${r.pending.length > 0 ? `
+                      <div class="d-flex flex-wrap gap-2">
+                        ${r.pending.map(p => `
+                          <span class="badge bg-danger-subtle text-danger border border-danger-subtle p-2">
+                            <i class="bi bi-person-x-fill me-1"></i> ${p.name}
+                          </span>
+                        `).join('')}
+                      </div>
+                    ` : '<div class="small text-success"><i class="bi bi-check-circle me-1"></i> 100% of employees have submitted today\'s reports!</div>'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cmd-item-card mb-3">
+              <!-- Submitted Employees & What They Did -->
+              <span class="text-success fw-bold small d-block mb-2"><i class="bi bi-check-circle-fill me-1"></i> Submitted Today (${r.submitted.length}):</span>
+              ${r.submitted.length > 0 ? `
+                <div class="d-flex flex-column gap-2">
+                  ${r.submitted.map(s => {
+                    let statusBadge = s.status === 'COMPLETED' ? 'bg-success' : (s.status === 'IN_PROGRESS' ? 'bg-info text-dark' : 'bg-danger');
+                    return `
+                      <div class="p-2 rounded bg-body-tertiary border small">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                          <strong class="text-body">${s.name}</strong>
+                          <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${statusBadge}">${s.status_display}</span>
+                            <span class="text-muted" style="font-size:0.75rem;">${s.time}</span>
+                          </div>
+                        </div>
+                        <div class="text-muted text-break">${s.task_description}</div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              ` : '<div class="small text-muted">No reports submitted yet today.</div>'}
+            </div>
+          `;
+
+          chartsToInit.push(() => {
+            const canvas = document.getElementById('cmdReportDonutChart');
+            if (canvas && typeof Chart !== 'undefined') {
+              const theme = getChartTheme();
+              paletteCharts['reportDonut'] = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                  labels: ['Submitted', 'Pending'],
+                  datasets: [{
+                    data: [r.submitted_count, r.pending_count],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  cutout: '65%',
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: { color: theme.textColor, font: { family: theme.fontFamily, size: 10 } }
+                    }
+                  }
+                }
+              });
+            }
+          });
+        }
+
+        // 4. Tasks & Approvals ("tasks", "approval", "waiting")
+        if (data.tasks) {
+          hasAnyResults = true;
+          const t = data.tasks;
+          html += `
+            <div class="cmd-section-title">
+              <span><i class="bi bi-list-check text-primary me-1"></i> Task Management & Sign-Offs</span>
+              <span class="badge ${t.waiting_count > 0 ? 'bg-danger' : 'bg-secondary'}">${t.waiting_count} Awaiting Approval</span>
+            </div>
+            <div class="cmd-item-card mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small text-muted fw-semibold">Tasks awaiting Boss approval</span>
+                <a href="${t.tasks_url}" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold cmd-nav-item">
+                  View Tasks Tab <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+              ${t.waiting_approval.length > 0 ? `
+                <div class="d-flex flex-column gap-2 mb-2">
+                  ${t.waiting_approval.map(task => `
+                    <div class="p-2 rounded bg-body-tertiary border small d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong class="text-body">${task.title}</strong>
+                        <div class="text-muted small">Assigned to: <strong class="text-primary">${task.assigned_to}</strong> &bull; Completed: ${task.completed_at}</div>
+                      </div>
+                      <span class="badge bg-purple text-white">Needs Approval</span>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : '<div class="small text-muted mb-2"><i class="bi bi-check-circle text-success me-1"></i> No tasks currently awaiting approval.</div>'}
+            </div>
+          `;
+        }
+
+        // 5. Matched Employee Details with Individual Performance Bar Chart
+        if (data.employees && data.employees.length > 0) {
+          hasAnyResults = true;
+          html += `<div class="cmd-section-title"><i class="bi bi-people-fill text-primary me-1"></i> Employee Profiles & Workload (${data.employees.length})</div>`;
+          data.employees.forEach(emp => {
+            const hasTaskBreakdown = emp.task_stats && (emp.task_stats.pending > 0 || emp.task_stats.waiting > 0 || emp.task_stats.approved > 0);
+            html += `
+              <div class="cmd-item-card mb-3">
+                <!-- Employee Header -->
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 border-bottom pb-2 mb-2">
+                  <div>
+                    <div class="fw-bold fs-6 text-body">
+                      <i class="bi bi-person-badge text-primary me-1"></i> ${emp.name}
+                      <span class="badge bg-secondary-subtle text-secondary small fw-normal ms-1">@${emp.username}</span>
+                    </div>
+                    <div class="small text-muted">${emp.email} ${emp.phone ? `&bull; ${emp.phone}` : ''}</div>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <a href="${emp.daily_report_url}" class="btn btn-sm btn-outline-primary py-0 px-2 small cmd-nav-item">
+                      <i class="bi bi-calendar3 me-1"></i> Monthly Sheet
+                    </a>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="${hasTaskBreakdown ? 'col-12 col-md-8' : 'col-12'}">
+                    <!-- 1. Today's Report -->
+                    <div class="mb-2">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold small text-body"><i class="bi bi-file-earmark-text me-1 text-primary"></i> Today's Report:</span>
+                        ${emp.today_report.submitted ? `
+                          <span class="badge ${emp.today_report.status === 'COMPLETED' ? 'bg-success' : 'bg-info text-dark'}">
+                            ${emp.today_report.status_display}
+                          </span>
+                        ` : '<span class="badge bg-danger">Not Submitted Yet</span>'}
+                      </div>
+                      ${emp.today_report.submitted ? `
+                        <div class="p-2 rounded bg-body-tertiary border small">
+                          <div class="text-body mb-1">${emp.today_report.task_description}</div>
+                          <div class="d-flex gap-2 text-muted" style="font-size: 0.75rem;">
+                            <span><i class="bi bi-clock me-1"></i>Submitted at ${emp.today_report.time}</span>
+                            ${emp.today_report.comments_count > 0 ? `<span class="badge bg-primary-subtle text-primary">${emp.today_report.comments_count} Boss Comments</span>` : ''}
+                          </div>
+                        </div>
+                      ` : `
+                        <div class="p-2 rounded bg-danger bg-opacity-10 border border-danger border-opacity-25 small text-danger">
+                          <i class="bi bi-exclamation-circle-fill me-1"></i> No report submitted for today yet.
+                        </div>
+                      `}
+                    </div>
+
+                    <!-- 2. Compliances Completed by this Employee this Month -->
+                    <div class="mb-2">
+                      <span class="fw-semibold small text-body d-block mb-1">
+                        <i class="bi bi-clipboard-check me-1 text-success"></i> Compliances Completed This Month (${emp.compliances_count}):
+                      </span>
+                      ${emp.compliances_completed.length > 0 ? `
+                        <div class="d-flex flex-column gap-1">
+                          ${emp.compliances_completed.map(c => `
+                            <div class="p-1 px-2 rounded bg-body-tertiary border d-flex justify-content-between align-items-center small">
+                              <div>
+                                <span class="badge bg-primary me-1">${c.company}</span>
+                                <strong>${c.compliance_type}</strong>
+                                ${c.reference_number ? `<span class="badge bg-secondary-subtle text-secondary ms-1">Challan: ${c.reference_number}</span>` : ''}
+                              </div>
+                              <span class="text-muted" style="font-size:0.75rem;">${c.completed_at || ''}</span>
+                            </div>
+                          `).join('')}
+                        </div>
+                      ` : '<div class="small text-muted fst-italic px-2">No compliances completed yet by this employee for this month.</div>'}
+                    </div>
+
+                    <!-- 3. Tasks Provided to Him & Status -->
+                    <div>
+                      <span class="fw-semibold small text-body d-block mb-1">
+                        <i class="bi bi-list-task me-1 text-info"></i> Assigned Tasks (${emp.tasks_count}):
+                      </span>
+                      ${emp.tasks.length > 0 ? `
+                        <div class="d-flex flex-column gap-1">
+                          ${emp.tasks.map(t => {
+                            let statusColor = t.status === 'APPROVED' ? 'bg-success' : (t.status === 'WAITING_APPROVAL' ? 'bg-purple text-white' : 'bg-warning text-dark');
+                            return `
+                              <div class="p-1 px-2 rounded bg-body-tertiary border d-flex justify-content-between align-items-center small">
+                                <div>
+                                  <strong>${t.title}</strong>
+                                  <span class="badge bg-secondary-subtle text-body border ms-1" style="font-size:0.7rem;">${t.priority_display}</span>
+                                  <span class="text-muted ms-1" style="font-size:0.72rem;">Due: ${t.due_date}</span>
+                                </div>
+                                <span class="badge ${statusColor}">${t.status_display}</span>
+                              </div>
+                            `;
+                          }).join('')}
+                        </div>
+                      ` : '<div class="small text-muted fst-italic px-2">No tasks assigned currently.</div>'}
+                    </div>
+                  </div>
+
+                  ${hasTaskBreakdown ? `
+                    <div class="col-12 col-md-4">
+                      <div class="p-2 rounded bg-body-tertiary border h-100 d-flex flex-column justify-content-center">
+                        <span class="small fw-bold text-body text-center mb-1">Workload Distribution</span>
+                        <div class="cmd-chart-container-sm">
+                          <canvas id="cmdEmpChart_${emp.id}"></canvas>
+                        </div>
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            `;
+
+            if (hasTaskBreakdown) {
+              chartsToInit.push(() => {
+                const canvas = document.getElementById(`cmdEmpChart_${emp.id}`);
+                if (canvas && typeof Chart !== 'undefined') {
+                  const theme = getChartTheme();
+                  paletteCharts[`emp_${emp.id}`] = new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {
+                      labels: ['Pending', 'Waiting Approval', 'Approved'],
+                      datasets: [{
+                        data: [emp.task_stats.pending, emp.task_stats.waiting, emp.task_stats.approved],
+                        backgroundColor: ['#f59e0b', '#8b5cf6', '#10b981'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                      }]
+                    },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      cutout: '65%',
+                      plugins: {
+                        legend: {
+                          position: 'bottom',
+                          labels: { color: theme.textColor, font: { family: theme.fontFamily, size: 9 } }
+                        }
+                      }
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        // 6. Quick Navigation Links
+        if (data.quick_nav && data.quick_nav.length > 0) {
+          hasAnyResults = true;
+          html += '<div class="cmd-section-title mt-2">Tools & Navigation</div>';
+          data.quick_nav.forEach(item => {
+            html += `
+              <a href="${item.url}" ${item.external ? 'target="_blank" rel="noopener noreferrer"' : ''} class="cmd-suggestion-row cmd-nav-item">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi ${item.icon} text-primary fs-5"></i>
+                  <div>
+                    <div class="fw-semibold text-body">${item.title} ${item.external ? '<i class="bi bi-box-arrow-up-right small text-muted ms-1"></i>' : ''}</div>
+                    <div class="small text-muted">${item.desc}</div>
+                  </div>
+                </div>
+                <i class="bi bi-arrow-right text-muted"></i>
+              </a>
+            `;
+          });
+        }
+
+        // Empty state if nothing matched
+        if (!hasAnyResults) {
+          html = `
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-search fs-1 d-block mb-2 text-secondary opacity-50"></i>
+              <div class="fw-semibold fs-6">No matching results for "${data.query}"</div>
+              <div class="small mt-1">Try typing an employee name, company like <code>LLP</code>, <code>GI</code>, <code>HUF</code>, or keywords like <code>report</code>, <code>compliance</code>, or <code>tasks</code>.</div>
+            </div>
+          `;
+        }
+
+        results.innerHTML = html;
+
+        // Run chart initializers
+        setTimeout(() => {
+          chartsToInit.forEach(initFn => initFn());
+        }, 40);
+      }
+
+      window.cmdRunQuery = function(q) {
+        if (!input) return;
+        input.value = q;
+        input.focus();
+        fetchResults(q);
+      };
+    })();
+  </script>
+  {% endif %}
 
   {% block extra_js %}{% endblock %}
 </body>

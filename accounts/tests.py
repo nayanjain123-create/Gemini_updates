@@ -325,43 +325,37 @@ class GeminiUpdatesPermissionsAndWorkflowTests(TestCase):
         self.assertTrue(data_owner['can_view_comments'])
         self.assertEqual(len(data_owner['comments']), 1)
 
-    # 13. Employee dashboard privacy: Only own boss comments are rendered.
+    # 13. Employee dashboard privacy: Only own boss remarks are rendered.
     def test_employee_dashboard_only_shows_own_boss_comments(self):
-        report_a = DailyTaskReport.objects.create(
-            employee=self.emp_a,
-            report_date=date.today(),
-            task_description="Emp A work"
+        from reports.models import AssignedTask
+        task_a = AssignedTask.objects.create(
+            title="Task for A",
+            assigned_by=self.boss,
+            assigned_to=self.emp_a,
+            status=AssignedTask.PENDING,
+            boss_remark="Secret remark for Emp A"
         )
-        report_b = DailyTaskReport.objects.create(
-            employee=self.emp_b,
-            report_date=date.today(),
-            task_description="Emp B work"
-        )
-
-        DailyTaskComment.objects.create(
-            daily_task_report=report_a,
-            boss=self.boss,
-            comment="Secret comment for Emp A"
-        )
-        DailyTaskComment.objects.create(
-            daily_task_report=report_b,
-            boss=self.boss,
-            comment="Secret comment for Emp B"
+        task_b = AssignedTask.objects.create(
+            title="Task for B",
+            assigned_by=self.boss,
+            assigned_to=self.emp_b,
+            status=AssignedTask.PENDING,
+            boss_remark="Secret remark for Emp B"
         )
 
-        # Employee A logs in -> Dashboard must ONLY contain Emp A's comment
+        # Employee A logs in -> Dashboard must ONLY contain Emp A's task and remark
         self.client.login(username='emp_a', password='password123')
         response_a = self.client.get(reverse('dashboard:index'))
         self.assertEqual(response_a.status_code, 200)
-        self.assertContains(response_a, "Secret comment for Emp A")
-        self.assertNotContains(response_a, "Secret comment for Emp B")
+        self.assertContains(response_a, "Secret remark for Emp A")
+        self.assertNotContains(response_a, "Secret remark for Emp B")
 
-        # Employee B logs in -> Dashboard must ONLY contain Emp B's comment
+        # Employee B logs in -> Dashboard must ONLY contain Emp B's task and remark
         self.client.login(username='emp_b', password='password123')
         response_b = self.client.get(reverse('dashboard:index'))
         self.assertEqual(response_b.status_code, 200)
-        self.assertContains(response_b, "Secret comment for Emp B")
-        self.assertNotContains(response_b, "Secret comment for Emp A")
+        self.assertContains(response_b, "Secret remark for Emp B")
+        self.assertNotContains(response_b, "Secret remark for Emp A")
 
     # 13. Assigned tasks workflow: Boss assigns task with priority, Employee updates status.
     def test_assigned_tasks_workflow(self):
@@ -382,15 +376,15 @@ class GeminiUpdatesPermissionsAndWorkflowTests(TestCase):
         self.assertEqual(task.priority, AssignedTask.HIGH)
         self.assertEqual(task.status, AssignedTask.PENDING)
 
-        # Log in as Employee A and update status to COMPLETED
+        # Log in as Employee A and update status to IN_PROGRESS
         self.client.login(username='emp_a', password='password123')
         response_status = self.client.post(reverse('reports:task_status_update', args=[task.id]), {
-            'status': AssignedTask.COMPLETED
+            'status': AssignedTask.IN_PROGRESS
         })
         self.assertEqual(response_status.status_code, 302)
 
         task.refresh_from_db()
-        self.assertEqual(task.status, AssignedTask.COMPLETED)
+        self.assertEqual(task.status, AssignedTask.IN_PROGRESS)
 
     # 14. Boss can reset employee password.
     def test_boss_can_reset_employee_password(self):

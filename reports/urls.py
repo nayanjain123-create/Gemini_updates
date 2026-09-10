@@ -13,5 +13,15 @@ urlpatterns = [
     path('tasks/', views.task_list_view, name='task_list'),
     path('tasks/create/', views.task_create_view, name='task_create'),
     path('tasks/<int:task_id>/status/', views.task_status_update_view, name='task_status_update'),
+    path('tasks/<int:task_id>/reallocate/', views.task_reallocate_view, name='task_reallocate'),
+    path('tasks/<int:task_id>/complete/', views.task_mark_complete_view, name='task_mark_complete'),
+    path('tasks/<int:task_id>/approve/', views.task_approve_view, name='task_approve'),
+    path('tasks/<int:task_id>/remark/', views.task_remark_view, name='task_remark'),
     path('tasks/<int:task_id>/edit/', views.task_edit_view, name='task_edit'),
+
+    # Notifications
+    path('notifications/<int:notification_id>/read/', views.notification_mark_read_view, name='notification_mark_read'),
+    path('notifications/mark-all-read/', views.notification_mark_all_read_view, name='notification_mark_all_read'),
+    path('notifications/api/latest/', views.notification_latest_api_view, name='notification_latest_api'),
 ]
+

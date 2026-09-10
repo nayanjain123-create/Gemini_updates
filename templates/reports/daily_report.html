@@ -21,7 +21,7 @@
       </a>
 
       <form method="get" action="{% url 'reports:daily_report' %}" class="d-flex align-items-center gap-2 month-nav-form">
-        <select name="month" class="form-select form-select-sm month-select-dropdown" onchange="this.form.submit()">
+        <select name="month" class="form-select form-select-sm month-select-dropdown" style="min-width: 145px;" onchange="this.form.submit()">
           {% for m_num, m_name in months_list %}
           <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
           {% endfor %}
@@ -36,12 +36,6 @@
       <a href="{% url 'reports:daily_report_by_month' next_year next_month %}" class="btn btn-outline-secondary btn-sm" title="Next Month">
         <i class="bi bi-chevron-right"></i>
       </a>
-
-      {% if selected_month == today.month and selected_year == today.year %}
-      <button type="button" class="btn btn-primary btn-sm fw-bold ms-2 d-none d-md-inline-flex" onclick="scrollToTodayColumn()" title="Jump to Today's Column">
-        <i class="bi bi-geo-alt-fill me-1"></i> Today ({{ today|date:"M" }} {{ today.day }})
-      </button>
-      {% endif %}
     </div>
   </div>
 
@@ -51,7 +45,7 @@
       <i class="bi bi-info-circle text-primary"></i>
       <span>Click any cell to view full entry text or leave boss comments. <span class="comment-dot"></span> indicates Boss comment present.</span>
     </div>
-    {% if selected_month == today.month and selected_year == today.year %}
+    {% if auto_scroll_today %}
     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle"><i class="bi bi-calendar-check me-1"></i> Auto-scrolled to Today (Day {{ today.day }})</span>
     {% endif %}
   </div>
@@ -324,8 +318,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    // Auto scroll matrix container to Today's column on load if current month/year matches
-    {% if selected_month == today.month and selected_year == today.year %}
+    // Auto scroll matrix container to Today's column on load if navigated to current month via Daily Report tab
+    {% if auto_scroll_today %}
     setTimeout(function() {
       scrollToTodayColumn();
     }, 150);

@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from accounts.models import User
-from reports.models import DailyTaskReport, DailyTaskComment
+from reports.models import DailyTaskReport, DailyTaskComment, AssignedTask, TaskReallocation, TaskRemark, Notification
 from compliance.models import ComplianceItem, ComplianceComment
 from compliance.views import ensure_compliance_items_exist
 from audit.utils import log_action
@@ -140,6 +140,111 @@ class Command(BaseCommand):
                         comment="Great progress! Please ensure test cases are added for this feature."
                     )
 
-        # 5. Log audit action
-        log_action(boss_user, 'SEED_DATA_EXECUTED', 'System', '0', 'Seeded initial demo accounts and monthly compliance records.')
+        # 5. Create Sample Assigned Tasks & Delegation Scenarios matching workflow
+        task1, created_t1 = AssignedTask.objects.get_or_create(
+            title="Complete the returns for container 4",
+            defaults={
+                'description': 'Process custom clearance paperwork and file the returns for incoming container 4.',
+                'assigned_by': boss_user,
+                'original_assigned_to': created_employees[1], # rupali
+                'assigned_to': created_employees[0], # rachana
+                'priority': AssignedTask.URGENT,
+                'status': AssignedTask.WAITING_APPROVAL,
+                'due_date': today + timedelta(days=2),
+                'is_reallocated': True,
+                'reallocation_reason': 'Assigned to urgent client clearance at port, Rachana handling container 4 returns.',
+                'completed_at': timezone.now() - timedelta(hours=2)
+            }
+        )
+        if created_t1:
+            # Add reallocation record
+            TaskReallocation.objects.create(
+                task=task1,
+                reallocated_by=created_employees[1], # rupali
+                reallocated_to=created_employees[0], # rachana
+                reason='Assigned to urgent client clearance at port, Rachana handling container 4 returns.'
+            )
+            # Add notifications
+            Notification.send(
+                recipient=boss_user,
+                sender=created_employees[1],
+                title="Task Reallocated to Rachana",
+                message="Task 'Complete the returns for container 4' was re-allocated to Rachana by Rupali. Reason: \"Assigned to urgent client clearance at port, Rachana handling container 4 returns.\"",
+                notification_type=Notification.TASK_REALLOCATED,
+                related_task=task1
+            )
+            Notification.send(
+                recipient=created_employees[0],
+                sender=created_employees[1],
+                title="Task Allocated to You",
+                message="Rupali allocated you a task: 'Complete the returns for container 4'. Reason: \"Assigned to urgent client clearance at port, Rachana handling container 4 returns.\"",
+                notification_type=Notification.TASK_REALLOCATED,
+                related_task=task1
+            )
+            Notification.send(
+                recipient=boss_user,
+                sender=created_employees[0],
+                title="Task Completed (Waiting for Approval)",
+                message="Rachana marked task 'Complete the returns for container 4' as completed. Waiting for your approval.",
+                notification_type=Notification.TASK_COMPLETED_WAITING_APPROVAL,
+                related_task=task1
+            )
+
+        # Task 2: Revision requested
+        task2, created_t2 = AssignedTask.objects.get_or_create(
+            title="Q3 GST Verification & Reconciliations",
+            defaults={
+                'description': 'Reconcile 2A/2B ledger with supplier tax invoices.',
+                'assigned_by': boss_user,
+                'original_assigned_to': created_employees[2], # pawan
+                'assigned_to': created_employees[2],
+                'priority': AssignedTask.HIGH,
+                'status': AssignedTask.PENDING,
+                'due_date': today + timedelta(days=4),
+                'boss_remark': 'Missing August purchase ledger reconciliation. Please verify and re-submit.'
+            }
+        )
+        if created_t2:
+            TaskRemark.objects.create(
+                task=task2,
+                boss=boss_user,
+                remark='Missing August purchase ledger reconciliation. Please verify and re-submit.'
+            )
+            Notification.send(
+                recipient=created_employees[2],
+                sender=boss_user,
+                title="Boss Added Remark - Revision Required",
+                message='Boss Pratik added a remark on \'Q3 GST Verification & Reconciliations\': "Missing August purchase ledger reconciliation. Please verify and re-submit.". The task has been switched to Pending for revision.',
+                notification_type=Notification.TASK_REVISION_REQUESTED,
+                related_task=task2
+            )
+
+        # Task 3: Approved
+        task3, created_t3 = AssignedTask.objects.get_or_create(
+            title="Prepare Export Compliance Filing",
+            defaults={
+                'description': 'File shipping bills and export compliance certificates.',
+                'assigned_by': boss_user,
+                'original_assigned_to': created_employees[3], # dhaval
+                'assigned_to': created_employees[3],
+                'priority': AssignedTask.MEDIUM,
+                'status': AssignedTask.APPROVED,
+                'due_date': today - timedelta(days=1),
+                'completed_at': timezone.now() - timedelta(days=1),
+                'approved_at': timezone.now() - timedelta(hours=5)
+            }
+        )
+        if created_t3:
+            Notification.send(
+                recipient=created_employees[3],
+                sender=boss_user,
+                title="Task Approved by Boss!",
+                message="Congratulations! Your completed task 'Prepare Export Compliance Filing' has been approved by Pratik.",
+                notification_type=Notification.TASK_APPROVED,
+                related_task=task3
+            )
+
+        # 6. Log audit action
+        log_action(boss_user, 'SEED_DATA_EXECUTED', 'System', '0', 'Seeded initial demo accounts, assigned tasks, delegation flows, and monthly compliance records.')
         self.stdout.write(self.style.SUCCESS("Successfully completed data seeding! You can now log in."))
+

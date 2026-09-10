@@ -42,3 +42,31 @@ class AssignedTaskStatusForm(forms.ModelForm):
         widgets = {
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
+
+class TaskReallocationForm(forms.Form):
+    reallocate_to = forms.ModelChoiceField(
+        queryset=User.objects.filter(is_active=True, role=User.EMPLOYEE).order_by('full_name', 'username'),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Delegate / Transfer Task To"
+    )
+    reason = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'State the clear reason why you are re-allocating this task (e.g. Busy with returns, assigned to another priority container)...'
+        }),
+        label="Reason for Reallocation",
+        required=True
+    )
+
+class TaskRemarkForm(forms.Form):
+    remark = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Provide feedback or specify what is incomplete before approving this task...'
+        }),
+        label="Boss Remark / Revision Instructions",
+        required=True
+    )
+

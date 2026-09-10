@@ -165,3 +165,84 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+/* --------------------------------------------------------------------------
+   4. Push Event: Handle incoming push messages from server
+   -------------------------------------------------------------------------- */
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'Gemini Insights',
+    body: 'You have a new notification.',
+    icon: '/static/pwa/icons/icon-192x192.png',
+    badge: '/static/pwa/icons/favicon-32x32.png',
+    tag: 'gemini-notification',
+    url: '/tasks/'
+  };
+
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      data = { ...data, ...payload };
+    } catch (e) {
+      data.body = event.data.text() || data.body;
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon,
+    badge: data.badge,
+    tag: data.tag,
+    renotify: true,
+    requireInteraction: false,
+    silent: false,
+    data: { url: data.url }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+/* --------------------------------------------------------------------------
+   5. Notification Click: Open or focus the relevant page
+   -------------------------------------------------------------------------- */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If app already open, focus it
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.focus();
+          if (client.navigate) client.navigate(targetUrl);
+          return;
+        }
+      }
+      // Otherwise open new window
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+/* --------------------------------------------------------------------------
+   6. Message Event: Handle messages from the page (e.g. show notification)
+   -------------------------------------------------------------------------- */
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, body, icon, badge, tag, url } = event.data;
+    self.registration.showNotification(title || 'Gemini Insights', {
+      body: body || 'You have a new notification.',
+      icon: icon || '/static/pwa/icons/icon-192x192.png',
+      badge: badge || '/static/pwa/icons/favicon-32x32.png',
+      tag: tag || 'gemini-notification',
+      renotify: true,
+      requireInteraction: false,
+      data: { url: url || '/tasks/' }
+    });
+  }
+});

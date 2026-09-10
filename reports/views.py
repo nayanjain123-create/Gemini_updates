@@ -11,20 +11,35 @@ from django.db.models import Q
 from accounts.models import User
 from accounts.decorators import boss_required
 from audit.utils import log_action
-from .models import DailyTaskReport, DailyTaskComment, AssignedTask
-from .forms import DailyTaskForm, DailyTaskCommentForm, AssignedTaskForm, AssignedTaskStatusForm
+from .models import DailyTaskReport, DailyTaskComment, AssignedTask, TaskReallocation, TaskRemark, Notification
+from .forms import DailyTaskForm, DailyTaskCommentForm, AssignedTaskForm, AssignedTaskStatusForm, TaskReallocationForm, TaskRemarkForm
 
 @login_required
 def daily_report_view(request, year=None, month=None):
     today = timezone.now().date()
     
-    # Handle month/year params
-    if not year or not month:
+    # Handle month/year params (from URL kwargs or GET query params from dropdown)
+    get_year = request.GET.get('year')
+    get_month = request.GET.get('month')
+
+    is_explicit_selection = bool(get_year or get_month or year or month)
+
+    raw_year = get_year or year
+    raw_month = get_month or month
+
+    if raw_year and raw_month:
+        try:
+            selected_year = int(raw_year)
+            selected_month = int(raw_month)
+        except (ValueError, TypeError):
+            selected_year = today.year
+            selected_month = today.month
+    else:
         selected_year = today.year
         selected_month = today.month
-    else:
-        selected_year = int(year)
-        selected_month = int(month)
+
+    # Auto-scroll to today ONLY when the user clicks the Daily Report tab directly (no explicit month parameter passed)
+    auto_scroll_today = (not is_explicit_selection) and (selected_month == today.month and selected_year == today.year)
 
     # Compute number of days in selected month
     _, num_days = calendar.monthrange(selected_year, selected_month)
@@ -115,6 +130,7 @@ def daily_report_view(request, year=None, month=None):
         'employee_filter': employee_filter,
         'status_filter': status_filter,
         'today': today,
+        'auto_scroll_today': auto_scroll_today,
         'months_list': [(m, calendar.month_name[m]) for m in range(1, 13)],
         'years_list': list(range(today.year - 2, today.year + 3)),
     }
@@ -213,12 +229,13 @@ def daily_task_save(request):
     )
 
     action_type = 'DAILY_TASK_CREATED' if created else 'DAILY_TASK_UPDATED'
+    emp_display = request.user.full_name or request.user.username
     log_action(
         request.user,
         action_type,
         'DailyTaskReport',
         task.id,
-        f"{'Created' if created else 'Updated'} daily task report for date {task.report_date}."
+        f"{emp_display} submitted daily task report for {task.report_date.strftime('%b %d, %Y')}."
     )
     messages.success(request, f"Daily task report saved for {report_date.strftime('%b %d, %Y')}!")
     return redirect(request.META.get('HTTP_REFERER', 'reports:daily_report'))
@@ -242,6 +259,16 @@ def daily_task_comment_add(request, task_id):
         boss=request.user,
         comment=comment_text
     )
+
+    # Notify employee of boss comment
+    if task.employee != request.user:
+        Notification.send(
+            recipient=task.employee,
+            sender=request.user,
+            title="Boss Commented on Daily Report",
+            message=f"{request.user.full_name or request.user.username} commented on your report for {task.report_date.strftime('%b %d')}: \"{comment_text}\"",
+            notification_type=Notification.DAILY_REPORT_COMMENT
+        )
 
     log_action(
         request.user,
@@ -299,16 +326,23 @@ def missing_daily_reports_view(request):
 
 @login_required
 def task_list_view(request):
-    """Assigned Tasks tab: Boss assigns tasks with priority; Employees view and update completion status."""
+    """Assigned Tasks tab: Boss assigns tasks with priority; Employees view, reallocate, mark completed, or boss approves/remarks."""
     if request.user.is_boss:
-        tasks = AssignedTask.objects.select_related('assigned_by', 'assigned_to').all()
+        tasks = AssignedTask.objects.select_related(
+            'assigned_by', 'assigned_to', 'original_assigned_to'
+        ).prefetch_related('reallocations', 'reallocations__reallocated_by', 'reallocations__reallocated_to', 'remarks', 'remarks__boss').all()
     else:
-        tasks = AssignedTask.objects.select_related('assigned_by', 'assigned_to').filter(assigned_to=request.user)
+        tasks = AssignedTask.objects.select_related(
+            'assigned_by', 'assigned_to', 'original_assigned_to'
+        ).prefetch_related('reallocations', 'reallocations__reallocated_by', 'reallocations__reallocated_to', 'remarks', 'remarks__boss').filter(
+            Q(assigned_to=request.user) | Q(original_assigned_to=request.user) | Q(status=AssignedTask.APPROVED)
+        )
 
     # Filter parameters
     status_filter = request.GET.get('status', '').strip()
     priority_filter = request.GET.get('priority', '').strip()
     emp_filter = request.GET.get('employee', '').strip()
+    reallocated_filter = request.GET.get('reallocated', '').strip()
     q_search = request.GET.get('q', '').strip()
 
     if status_filter:
@@ -317,17 +351,21 @@ def task_list_view(request):
         tasks = tasks.filter(priority=priority_filter)
     if emp_filter and request.user.is_boss:
         tasks = tasks.filter(assigned_to_id=emp_filter)
+    if reallocated_filter == '1':
+        tasks = tasks.filter(is_reallocated=True)
     if q_search:
-        tasks = tasks.filter(Q(title__icontains=q_search) | Q(description__icontains=q_search))
+        tasks = tasks.filter(Q(title__icontains=q_search) | Q(description__icontains=q_search) | Q(reallocation_reason__icontains=q_search))
 
-    active_employees = User.objects.filter(is_active=True).order_by('full_name')
+    active_employees = User.objects.filter(is_active=True, role=User.EMPLOYEE).order_by('full_name', 'username')
     form = AssignedTaskForm() if request.user.is_boss else None
 
     # Summary counts
     total_assigned_count = tasks.count()
     pending_count = tasks.filter(status=AssignedTask.PENDING).count()
     inprogress_count = tasks.filter(status=AssignedTask.IN_PROGRESS).count()
-    completed_count = tasks.filter(status=AssignedTask.COMPLETED).count()
+    waiting_approval_count = tasks.filter(status=AssignedTask.WAITING_APPROVAL).count()
+    approved_count = tasks.filter(status=AssignedTask.APPROVED).count()
+    reallocated_count = tasks.filter(is_reallocated=True).count()
 
     context = {
         'tasks': tasks,
@@ -336,11 +374,14 @@ def task_list_view(request):
         'status_filter': status_filter,
         'priority_filter': priority_filter,
         'emp_filter': emp_filter,
+        'reallocated_filter': reallocated_filter,
         'q_search': q_search,
         'total_assigned_count': total_assigned_count,
         'pending_count': pending_count,
         'inprogress_count': inprogress_count,
-        'completed_count': completed_count,
+        'waiting_approval_count': waiting_approval_count,
+        'approved_count': approved_count,
+        'reallocated_count': reallocated_count,
         'priority_choices': AssignedTask.PRIORITY_CHOICES,
         'status_choices': AssignedTask.STATUS_CHOICES,
     }
@@ -357,7 +398,18 @@ def task_create_view(request):
     if form.is_valid():
         task = form.save(commit=False)
         task.assigned_by = request.user
+        task.original_assigned_to = task.assigned_to
         task.save()
+
+        # Send notification to assigned employee
+        Notification.send(
+            recipient=task.assigned_to,
+            sender=request.user,
+            title="New Task Allocated by Boss",
+            message=f"Boss {request.user.full_name or request.user.username} allocated you a task: '{task.title}' (Priority: {task.get_priority_display()}).",
+            notification_type=Notification.TASK_ASSIGNED,
+            related_task=task
+        )
 
         log_action(
             request.user,
@@ -366,26 +418,105 @@ def task_create_view(request):
             task.id,
             f"Assigned task '{task.title}' to {task.assigned_to.username} with priority {task.get_priority_display()}."
         )
-        messages.success(request, f"Task '{task.title}' successfully assigned to {task.assigned_to.full_name or task.assigned_to.username}!")
+        messages.success(request, f"Task '{task.title}' successfully allocated to {task.assigned_to.full_name or task.assigned_to.username}!")
     else:
         messages.error(request, "Failed to assign task. Please check form entries.")
 
     return redirect('reports:task_list')
 
 @login_required
-def task_status_update_view(request, task_id):
-    """Employee (or Boss) updates status of assigned task (Pending -> In Progress -> Completed)."""
+def task_reallocate_view(request, task_id):
+    """Employee delegates / re-allocates their assigned task to another employee with a mandatory reason."""
     if request.method != 'POST':
         return redirect('reports:task_list')
 
     task = get_object_or_404(AssignedTask, id=task_id)
 
-    # Permission check: Only assigned employee or Boss can update task status
+    # Permission check: current assigned employee or boss can reallocate
+    if task.assigned_to != request.user and not request.user.is_boss:
+        raise PermissionDenied("You can only re-allocate tasks that are currently assigned to you.")
+
+    reallocate_to_id = request.POST.get('reallocate_to')
+    reason = request.POST.get('reason', '').strip()
+
+    if not reallocate_to_id or not reason:
+        messages.error(request, "Please select an employee and specify the reason for reallocating this task.")
+        return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
+    new_assignee = get_object_or_404(User, id=reallocate_to_id, is_active=True)
+
+    if new_assignee == task.assigned_to:
+        messages.warning(request, "Task is already assigned to this employee.")
+        return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
+    old_assignee = task.assigned_to
+
+    # Record reallocation history
+    TaskReallocation.objects.create(
+        task=task,
+        reallocated_by=request.user,
+        reallocated_to=new_assignee,
+        reason=reason
+    )
+
+    # Update task details
+    task.assigned_to = new_assignee
+    task.is_reallocated = True
+    task.reallocation_reason = reason
+    if task.status == AssignedTask.WAITING_APPROVAL or task.status == AssignedTask.APPROVED:
+        task.status = AssignedTask.PENDING
+    task.save()
+
+    sender_name = request.user.full_name or request.user.username
+    new_assignee_name = new_assignee.full_name or new_assignee.username
+    old_assignee_name = old_assignee.full_name or old_assignee.username
+
+    # 1. Notify Boss: Task was allocated to other employee
+    bosses = User.objects.filter(role=User.BOSS, is_active=True)
+    for boss in bosses:
+        Notification.send(
+            recipient=boss,
+            sender=request.user,
+            title=f"Task Reallocated to {new_assignee_name}",
+            message=f"Task '{task.title}' was re-allocated to {new_assignee_name} by {sender_name}. Reason: \"{reason}\"",
+            notification_type=Notification.TASK_REALLOCATED,
+            related_task=task
+        )
+
+    # 2. Notify New Employee: rupali allocated you a task
+    Notification.send(
+        recipient=new_assignee,
+        sender=request.user,
+        title="Task Allocated to You",
+        message=f"{sender_name} allocated you a task: '{task.title}'. Reason: \"{reason}\"",
+        notification_type=Notification.TASK_REALLOCATED,
+        related_task=task
+    )
+
+    log_action(
+        request.user,
+        'TASK_REALLOCATED',
+        'AssignedTask',
+        task.id,
+        f"Reallocated task '{task.title}' from {old_assignee_name} to {new_assignee_name}. Reason: {reason}"
+    )
+
+    messages.success(request, f"Task '{task.title}' successfully re-allocated to {new_assignee_name}. Boss and colleague notified!")
+    return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
+@login_required
+def task_status_update_view(request, task_id):
+    """Employee updates status of assigned task (Pending <-> In Progress)."""
+    if request.method != 'POST':
+        return redirect('reports:task_list')
+
+    task = get_object_or_404(AssignedTask, id=task_id)
+
     if task.assigned_to != request.user and not request.user.is_boss:
         raise PermissionDenied("You can only update tasks assigned to you.")
 
     new_status = request.POST.get('status', '').strip()
-    if new_status in [AssignedTask.PENDING, AssignedTask.IN_PROGRESS, AssignedTask.COMPLETED]:
+    if new_status in [AssignedTask.PENDING, AssignedTask.IN_PROGRESS]:
         task.status = new_status
         task.save()
 
@@ -398,6 +529,143 @@ def task_status_update_view(request, task_id):
         )
         messages.success(request, f"Status for '{task.title}' updated to {task.get_status_display()}.")
 
+    return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
+@login_required
+def task_mark_complete_view(request, task_id):
+    """Employee marks task done -> Status switches to WAITING_APPROVAL, boss notified for approval."""
+    if request.method != 'POST':
+        return redirect('reports:task_list')
+
+    task = get_object_or_404(AssignedTask, id=task_id)
+
+    if task.assigned_to != request.user and not request.user.is_boss:
+        raise PermissionDenied("You can only mark tasks assigned to you as completed.")
+
+    task.status = AssignedTask.WAITING_APPROVAL
+    task.completed_at = timezone.now()
+    task.save()
+
+    emp_name = request.user.full_name or request.user.username
+
+    # Notify Boss that given task is completed, waiting for approval
+    bosses = User.objects.filter(role=User.BOSS, is_active=True)
+    for boss in bosses:
+        Notification.send(
+            recipient=boss,
+            sender=request.user,
+            title=f"Task Completed by {emp_name} (Waiting for Approval)",
+            message=f"{emp_name} marked task '{task.title}' as completed. Waiting for your approval.",
+            notification_type=Notification.TASK_COMPLETED_WAITING_APPROVAL,
+            related_task=task
+        )
+
+    log_action(
+        request.user,
+        'TASK_MARKED_COMPLETED',
+        'AssignedTask',
+        task.id,
+        f"{emp_name} marked task '{task.title}' as completed (Waiting Approval)."
+    )
+
+    messages.success(request, f"Task '{task.title}' marked as completed and submitted to Boss for approval!")
+    return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
+@login_required
+@boss_required
+def task_approve_view(request, task_id):
+    """Boss approves completed task -> Employee is notified that task is approved."""
+    if request.method != 'POST':
+        return redirect('reports:task_list')
+
+    task = get_object_or_404(AssignedTask, id=task_id)
+
+    task.status = AssignedTask.APPROVED
+    task.approved_at = timezone.now()
+    task.save()
+
+    boss_name = request.user.full_name or request.user.username
+
+    # Notify current assignee
+    Notification.send(
+        recipient=task.assigned_to,
+        sender=request.user,
+        title="Task Approved by Boss!",
+        message=f"Congratulations! Your completed task '{task.title}' has been approved by {boss_name}.",
+        notification_type=Notification.TASK_APPROVED,
+        related_task=task
+    )
+
+    # If reallocated, also notify original assignee
+    if task.original_assigned_to and task.original_assigned_to != task.assigned_to:
+        Notification.send(
+            recipient=task.original_assigned_to,
+            sender=request.user,
+            title="Delegated Task Approved",
+            message=f"Task '{task.title}' (originally assigned to you, completed by {task.assigned_to.full_name or task.assigned_to.username}) has been approved by {boss_name}.",
+            notification_type=Notification.TASK_APPROVED,
+            related_task=task
+        )
+
+    completed_by_name = task.assigned_to.full_name or task.assigned_to.username
+    log_action(
+        request.user,
+        'TASK_APPROVED',
+        'AssignedTask',
+        task.id,
+        f"Task '{task.title}' completed by {completed_by_name} was approved by Boss."
+    )
+
+    messages.success(request, f"Task '{task.title}' approved successfully! Employee notified.")
+    return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
+@login_required
+@boss_required
+def task_remark_view(request, task_id):
+    """Boss remarks about incomplete task -> Employee notified, task automatically switched to PENDING."""
+    if request.method != 'POST':
+        return redirect('reports:task_list')
+
+    task = get_object_or_404(AssignedTask, id=task_id)
+    remark_text = request.POST.get('remark', '').strip()
+
+    if not remark_text:
+        messages.error(request, "Remark text cannot be empty.")
+        return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
+    # Record remark
+    TaskRemark.objects.create(
+        task=task,
+        boss=request.user,
+        remark=remark_text
+    )
+
+    # Revert status to PENDING
+    task.status = AssignedTask.PENDING
+    task.boss_remark = remark_text
+    task.save()
+
+    boss_name = request.user.full_name or request.user.username
+
+    # Notify assigned employee
+    Notification.send(
+        recipient=task.assigned_to,
+        sender=request.user,
+        title="Boss Added Remark - Revision Required",
+        message=f"Boss {boss_name} added a remark on '{task.title}': \"{remark_text}\". The task has been switched to Pending for revision.",
+        notification_type=Notification.TASK_REVISION_REQUESTED,
+        related_task=task
+    )
+
+    log_action(
+        request.user,
+        'TASK_REMARK_ADDED',
+        'AssignedTask',
+        task.id,
+        f"Boss added remark on '{task.title}': '{remark_text}'. Switched task to Pending."
+    )
+
+    messages.info(request, f"Remark sent to {task.assigned_to.full_name or task.assigned_to.username}. Task reverted to Pending for revision.")
     return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
 
 @login_required
@@ -423,3 +691,60 @@ def task_edit_view(request, task_id):
         form = AssignedTaskForm(instance=task)
 
     return render(request, 'reports/assigned_task_form.html', {'form': form, 'task': task})
+
+
+# ==================== NOTIFICATIONS API & VIEWS ====================
+
+@login_required
+def notification_mark_read_view(request, notification_id):
+    """Mark a single notification as read."""
+    notification = get_object_or_404(Notification, id=notification_id, recipient=request.user)
+    notification.is_read = True
+    notification.read_at = timezone.now()
+    notification.save(update_fields=['is_read', 'read_at'])
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        return JsonResponse({'status': 'success', 'id': notification.id})
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard:index'))
+
+@login_required
+def notification_mark_all_read_view(request):
+    """Mark all notifications for logged-in user as read."""
+    Notification.objects.filter(recipient=request.user, is_read=False).update(
+        is_read=True,
+        read_at=timezone.now()
+    )
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        return JsonResponse({'status': 'success'})
+    messages.success(request, "All notifications marked as read.")
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard:index'))
+
+
+@login_required
+def notification_latest_api_view(request):
+    """
+    Lightweight JSON API to poll for the latest unread notification count and
+    the most recent unread notification details. Used by the browser push
+    notification system in base.html.
+    Returns: { unread_count, latest: { id, title, message, notification_type, created_at } | null }
+    """
+    unread_qs = Notification.objects.filter(
+        recipient=request.user, is_read=False
+    ).select_related('sender').order_by('-created_at')
+
+    unread_count = unread_qs.count()
+    latest = unread_qs.first()
+
+    latest_data = None
+    if latest:
+        latest_data = {
+            'id': latest.id,
+            'title': latest.title,
+            'message': latest.message,
+            'notification_type': latest.notification_type,
+            'created_at': latest.created_at.isoformat(),
+        }
+
+    return JsonResponse({
+        'unread_count': unread_count,
+        'latest': latest_data,
+    })

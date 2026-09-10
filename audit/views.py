@@ -5,22 +5,25 @@ from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from .models import AuditLog
 
-# Only show audit logs for: employee adds task, completion & payment, boss assigns task
 ALLOWED_AUDIT_ACTIONS = [
     'DAILY_TASK_CREATED',
     'DAILY_TASK_UPDATED',
+    'COMPLIANCE_MARKED_DONE',
+    'COMPLIANCE_MARKED_NA',
     'COMPLIANCE_ITEM_COMPLETED',
+    'TASK_APPROVED',
+    'TASK_MARKED_COMPLETED',
+    'TASK_REALLOCATED',
     'ASSIGNED_TASK_CREATED',
     'ASSIGNED_TASK_STATUS_UPDATED',
+    'TASK_REMARK_ADDED',
 ]
 
 @login_required
 def audit_log_list(request):
-    if not request.user.is_boss:
-        raise PermissionDenied("Only Boss users can view Audit Logs.")
-    
     # Filter strictly to relevant task creation, completion, payment & assignment logs
     logs = AuditLog.objects.filter(action__in=ALLOWED_AUDIT_ACTIONS).select_related('user')
+
     
     # Filtering
     user_query = request.GET.get('user', '').strip()

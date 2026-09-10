@@ -1,88 +1,109 @@
 {% extends "base.html" %}
 
-{% block title %}Tasks - Gemini Insights{% endblock %}
+{% block title %}Tasks & Workflow Tracking - Gemini Insights{% endblock %}
 
 {% block content %}
 <div class="container-fluid my-3">
 
+  <!-- Header Banner -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-list-check text-primary me-2"></i> Tasks</h2>
+      <h2 class="fw-bold mb-1"><i class="bi bi-list-check text-primary me-2"></i> Assigned Tasks & Workflow</h2>
       <p class="text-muted mb-0">
         {% if user.is_boss %}
-        Assign tasks to employees, set priorities, and monitor completion progress
+        Assign tasks, track re-allocations/delegations with reasons, review completions, and approve or add remarks.
         {% else %}
-        Tasks assigned to you by management &bull; Update status as you work
+        Manage your tasks, delegate to colleagues with reasons, submit for Boss approval, and review feedback.
         {% endif %}
       </p>
     </div>
 
-    {% if user.is_boss %}
-    <div>
+    <div class="d-flex gap-2">
+      {% if user.is_boss %}
       <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#assignTaskModal">
-        <i class="bi bi-plus-lg me-1"></i> Assign New Task
+        <i class="bi bi-plus-lg me-1"></i> Allocate New Task
       </button>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
 
   <!-- Summary Metric Cards -->
   <div class="row g-3 mb-4">
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card card-stat border-0 shadow-sm border-start border-4 border-primary">
-        <div class="card-stat-title">Total Tasks</div>
-        <div class="card-stat-value">{{ total_assigned_count }}</div>
-        <div class="small text-muted mt-1">{% if user.is_boss %}Across all employees{% else %}Assigned to you{% endif %}</div>
-      </div>
+    <div class="col-6 col-md-3 col-xl">
+      <a href="{% url 'reports:task_list' %}" class="text-decoration-none">
+        <div class="card card-stat border-0 shadow-sm border-start border-4 border-primary h-100">
+          <div class="card-stat-title">Total Tasks</div>
+          <div class="card-stat-value">{{ total_assigned_count }}</div>
+          <div class="small text-muted mt-1">{% if user.is_boss %}All staff{% else %}Assigned to you{% endif %}</div>
+        </div>
+      </a>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card card-stat border-0 shadow-sm border-start border-4 border-warning">
-        <div class="card-stat-title">Pending</div>
-        <div class="card-stat-value text-warning">{{ pending_count }}</div>
-        <div class="small text-muted mt-1">Awaiting start</div>
-      </div>
+    <div class="col-6 col-md-3 col-xl">
+      <a href="{% url 'reports:task_list' %}?status=PENDING" class="text-decoration-none">
+        <div class="card card-stat border-0 shadow-sm border-start border-4 border-warning h-100">
+          <div class="card-stat-title">Pending</div>
+          <div class="card-stat-value text-warning">{{ pending_count }}</div>
+          <div class="small text-muted mt-1">Awaiting action</div>
+        </div>
+      </a>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card card-stat border-0 shadow-sm border-start border-4 border-info">
-        <div class="card-stat-title">In Progress</div>
-        <div class="card-stat-value text-info">{{ inprogress_count }}</div>
-        <div class="small text-muted mt-1">Currently being worked on</div>
-      </div>
+    <div class="col-6 col-md-3 col-xl">
+      <a href="{% url 'reports:task_list' %}?status=WAITING_APPROVAL" class="text-decoration-none">
+        <div class="card card-stat border-0 shadow-sm border-start border-4 border-purple h-100">
+          <div class="card-stat-title">Awaiting Approval</div>
+          <div class="card-stat-value text-purple">{{ waiting_approval_count }}</div>
+          <div class="small text-muted mt-1">Needs boss review</div>
+        </div>
+      </a>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card card-stat border-0 shadow-sm border-start border-4 border-success">
-        <div class="card-stat-title">Completed</div>
-        <div class="card-stat-value text-success">{{ completed_count }}</div>
-        <div class="small text-muted mt-1">Finished tasks</div>
-      </div>
+    <div class="col-6 col-md-3 col-xl">
+      <a href="{% url 'reports:task_list' %}?status=APPROVED" class="text-decoration-none">
+        <div class="card card-stat border-0 shadow-sm border-start border-4 border-success h-100">
+          <div class="card-stat-title">Approved</div>
+          <div class="card-stat-value text-success">{{ approved_count }}</div>
+          <div class="small text-muted mt-1">Completed & approved</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-6 col-md-3 col-xl">
+      <a href="{% url 'reports:task_list' %}?reallocated=1" class="text-decoration-none">
+        <div class="card card-stat border-0 shadow-sm border-start border-4 border-secondary h-100">
+          <div class="card-stat-title">Delegated</div>
+          <div class="card-stat-value text-secondary">{{ reallocated_count }}</div>
+          <div class="small text-muted mt-1">Delegated tasks</div>
+        </div>
+      </a>
     </div>
   </div>
 
   <!-- Search & Filter Bar -->
   <div class="card card-stat border-0 shadow-sm mb-4">
     <div class="card-body p-3">
-      <form method="get" class="row g-3 align-items-center">
-        <div class="col-12 col-md-4">
+      <form method="get" id="taskFilterForm" class="row g-3 align-items-center">
+        <div class="col-12 col-md-3">
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" class="form-control" placeholder="Search tasks by title or description..." value="{{ q_search }}">
+            <input type="text" name="q" class="form-control" placeholder="Search tasks..." value="{{ q_search }}" onchange="document.getElementById('taskFilterForm').submit()">
           </div>
         </div>
 
         <div class="col-12 col-sm-6 col-md-2">
-          <select name="status" class="form-select">
+          <select name="status" class="form-select" onchange="this.form.submit()">
             <option value="">All Statuses</option>
             {% for code, label in status_choices %}
+            {% if code != 'IN_PROGRESS' %}
             <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+            {% endif %}
             {% endfor %}
           </select>
         </div>
 
         <div class="col-12 col-sm-6 col-md-2">
-          <select name="priority" class="form-select">
+          <select name="priority" class="form-select" onchange="this.form.submit()">
             <option value="">All Priorities</option>
             {% for code, label in priority_choices %}
             <option value="{{ code }}" {% if priority_filter == code %}selected{% endif %}>{{ label }}</option>
@@ -92,8 +113,8 @@
 
         {% if user.is_boss %}
         <div class="col-12 col-sm-6 col-md-2">
-          <select name="employee" class="form-select">
-            <option value="">All Employees</option>
+          <select name="employee" class="form-select" onchange="this.form.submit()">
+            <option value="">All Assignees</option>
             {% for emp in active_employees %}
             <option value="{{ emp.id }}" {% if emp_filter == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.full_name|default:emp.username }}</option>
             {% endfor %}
@@ -101,51 +122,67 @@
         </div>
         {% endif %}
 
-        <div class="col-12 col-md-2 d-flex gap-2">
-          <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-funnel-fill me-1"></i> Filter</button>
-          {% if q_search or status_filter or priority_filter or emp_filter %}
-          <a href="{% url 'reports:task_list' %}" class="btn btn-outline-danger" title="Clear Filters"><i class="bi bi-x-circle"></i></a>
-          {% endif %}
+        {% if q_search or status_filter or priority_filter or emp_filter or reallocated_filter %}
+        <div class="col-auto ms-auto">
+          <a href="{% url 'reports:task_list' %}" class="btn btn-outline-danger btn-sm px-3" title="Clear Filters"><i class="bi bi-x-circle me-1"></i> Clear</a>
         </div>
+        {% endif %}
       </form>
     </div>
   </div>
 
-  <!-- Tasks Grid / Cards List -->
+  <!-- Tasks Grid -->
   <div class="row g-3">
     {% for task in tasks %}
     <div class="col-12 col-md-6 col-xl-4">
-      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 {% if task.status == 'COMPLETED' %}border-success{% elif task.status == 'IN_PROGRESS' %}border-info{% else %}border-warning{% endif %}">
+      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 
+        {% if task.status == 'APPROVED' %}border-success
+        {% elif task.status == 'WAITING_APPROVAL' %}border-purple
+        {% elif task.status == 'IN_PROGRESS' %}border-info
+        {% else %}border-warning{% endif %}">
         
         <!-- Header & Badges -->
         <div class="d-flex justify-content-between align-items-start mb-2">
-          <div>
-            <!-- Priority Badge (Boss assigned) -->
+          <div class="d-flex flex-wrap gap-1 align-items-center">
+            <!-- Priority Badge -->
             {% if task.priority == 'URGENT' %}
-              <span class="badge bg-danger text-white me-1"><i class="bi bi-exclamation-octagon-fill me-1"></i> Urgent</span>
+              <span class="badge bg-danger text-white"><i class="bi bi-exclamation-octagon-fill me-1"></i> Urgent</span>
             {% elif task.priority == 'HIGH' %}
-              <span class="badge bg-warning text-dark me-1"><i class="bi bi-arrow-up-circle-fill me-1"></i> High Priority</span>
+              <span class="badge bg-warning text-dark"><i class="bi bi-arrow-up-circle-fill me-1"></i> High</span>
             {% elif task.priority == 'MEDIUM' %}
-              <span class="badge bg-info text-white me-1">Medium Priority</span>
+              <span class="badge bg-info text-white">Medium</span>
             {% else %}
-              <span class="badge bg-secondary text-white me-1">Low Priority</span>
+              <span class="badge bg-secondary text-white">Low</span>
             {% endif %}
 
             <!-- Status Badge -->
-            {% if task.status == 'COMPLETED' %}
-              <span class="badge badge-completed"><i class="bi bi-check-circle-fill me-1"></i> Completed</span>
+            {% if task.status == 'APPROVED' %}
+              <span class="badge badge-completed"><i class="bi bi-check-circle-fill me-1"></i> Approved</span>
+            {% elif task.status == 'WAITING_APPROVAL' %}
+              <span class="badge bg-purple text-white"><i class="bi bi-hourglass-split me-1"></i> Waiting Approval</span>
             {% elif task.status == 'IN_PROGRESS' %}
               <span class="badge badge-inprogress"><i class="bi bi-play-circle-fill me-1"></i> In Progress</span>
             {% else %}
               <span class="badge badge-pending"><i class="bi bi-clock-history me-1"></i> Pending</span>
             {% endif %}
+
+            <!-- Reallocated Badge -->
+            {% if task.is_reallocated %}
+              <span class="badge bg-secondary bg-opacity-10 text-secondary border"><i class="bi bi-arrow-left-right me-1"></i> Delegated</span>
+            {% endif %}
           </div>
 
-          {% if user.is_boss %}
-          <a href="{% url 'reports:task_edit' task.id %}" class="btn btn-sm btn-outline-primary" title="Edit Task Details & Priority">
-            <i class="bi bi-pencil-fill"></i>
-          </a>
-          {% endif %}
+          <div class="d-flex gap-1">
+            <!-- View History Modal Trigger -->
+            <button type="button" class="btn btn-sm btn-outline-secondary p-1 px-2" data-bs-toggle="modal" data-bs-target="#historyModal_{{ task.id }}" title="View Allocation & Remarks History">
+              <i class="bi bi-clock-history"></i>
+            </button>
+            {% if user.is_boss %}
+            <a href="{% url 'reports:task_edit' task.id %}" class="btn btn-sm btn-outline-primary p-1 px-2" title="Edit Task Details">
+              <i class="bi bi-pencil-fill"></i>
+            </a>
+            {% endif %}
+          </div>
         </div>
 
         <!-- Task Title & Description -->
@@ -154,8 +191,24 @@
         <p class="text-muted small mb-3 text-break">{{ task.description }}</p>
         {% endif %}
 
+        <!-- Reallocation Notice Callout -->
+        {% if task.is_reallocated %}
+        <div class="p-2 mb-2 rounded bg-warning bg-opacity-10 border border-warning-subtle small text-body">
+          <div class="fw-bold text-warning-emphasis"><i class="bi bi-arrow-left-right me-1"></i> Delegated from {{ task.original_assigned_to.full_name|default:task.original_assigned_to.username }}:</div>
+          <div class="fst-italic mt-1 text-muted">"{{ task.reallocation_reason }}"</div>
+        </div>
+        {% endif %}
+
+        <!-- Boss Remark Notice Callout -->
+        {% if task.boss_remark %}
+        <div class="p-2 mb-2 rounded bg-danger bg-opacity-10 border border-danger-subtle small text-body">
+          <div class="fw-bold text-danger"><i class="bi bi-exclamation-octagon-fill me-1"></i> Boss Remark (Action Required):</div>
+          <div class="mt-1 text-danger-emphasis">{{ task.boss_remark }}</div>
+        </div>
+        {% endif %}
+
         <div class="mt-auto pt-3 border-top d-flex flex-column gap-2">
-          <!-- Meta details -->
+          <!-- Assignee & Due Date -->
           <div class="d-flex justify-content-between align-items-center small text-muted">
             <div>
               <i class="bi bi-person-badge me-1"></i> Assigned To: <strong class="text-body">{{ task.assigned_to.full_name|default:task.assigned_to.username }}</strong>
@@ -168,25 +221,221 @@
           </div>
 
           <div class="small text-muted">
-            <i class="bi bi-shield-lock me-1"></i> Assigned by <strong>{{ task.assigned_by.full_name|default:task.assigned_by.username }}</strong> on {{ task.created_at|date:"M d, Y" }}
+            <i class="bi bi-shield-lock me-1"></i> Created by <strong>{{ task.assigned_by.full_name|default:task.assigned_by.username }}</strong> on {{ task.created_at|date:"M d, Y" }}
           </div>
 
-          <!-- Employee Quick Status Update Controls -->
+          <!-- ACTION BUTTONS SECTION -->
           <div class="mt-2 pt-2 border-top">
-            <form method="post" action="{% url 'reports:task_status_update' task.id %}" class="d-flex align-items-center gap-2">
-              {% csrf_token %}
-              <label class="form-label small fw-semibold mb-0 text-muted">Update Status:</label>
-              <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="PENDING" {% if task.status == 'PENDING' %}selected{% endif %}>Pending</option>
-                <option value="IN_PROGRESS" {% if task.status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
-                <option value="COMPLETED" {% if task.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
-              </select>
-            </form>
+            
+            {% if user.is_boss %}
+              <!-- BOSS ACTIONS -->
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                {% if task.status == 'WAITING_APPROVAL' %}
+                  <form method="post" action="{% url 'reports:task_approve' task.id %}" class="d-inline flex-grow-1">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm">
+                      <i class="bi bi-check2-circle me-1"></i> Approve Task
+                    </button>
+                  </form>
+                  <button type="button" class="btn btn-sm btn-outline-danger fw-bold flex-grow-1" data-bs-toggle="modal" data-bs-target="#remarkModal_{{ task.id }}">
+                    <i class="bi bi-chat-dots me-1"></i> Add Remark
+                  </button>
+                {% elif task.status == 'APPROVED' %}
+                  <span class="badge badge-completed p-2 w-100 text-center"><i class="bi bi-check-all me-1"></i> Task Approved</span>
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#remarkModal_{{ task.id }}">
+                    <i class="bi bi-chat-left-text me-1"></i> Add Boss Feedback / Remark
+                  </button>
+                {% endif %}
+              </div>
+
+            {% else %}
+              <!-- EMPLOYEE ACTIONS -->
+              <div class="d-flex flex-column gap-2">
+                {% if task.assigned_to == user %}
+                  {% if task.status == 'WAITING_APPROVAL' %}
+                    <div class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-center justify-content-between">
+                      <span><i class="bi bi-hourglass-split me-1"></i> Submitted to Boss for Approval</span>
+                    </div>
+                  {% elif task.status == 'APPROVED' %}
+                    <div class="alert alert-success py-2 px-3 mb-0 small d-flex align-items-center justify-content-between">
+                      <span><i class="bi bi-check-circle-fill me-1"></i> Approved by Boss</span>
+                    </div>
+                  {% else %}
+                    <!-- Complete & Delegate Buttons -->
+                    <div class="d-flex gap-2">
+                      <form method="post" action="{% url 'reports:task_mark_complete' task.id %}" class="flex-grow-1">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" title="Mark done and notify boss for approval">
+                          <i class="bi bi-check2-circle me-1"></i> Mark Completed
+                        </button>
+                      </form>
+                      <button type="button" class="btn btn-sm btn-outline-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#reallocateModal_{{ task.id }}" title="Delegate/Transfer task to a colleague">
+                        <i class="bi bi-arrow-left-right me-1"></i> Delegate
+                      </button>
+                    </div>
+                  {% endif %}
+                {% else %}
+                  {% if task.status == 'APPROVED' %}
+                  <div class="alert alert-success py-2 px-3 mb-0 small d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-check-circle-fill me-1"></i> Completed by <strong>{{ task.assigned_to.full_name|default:task.assigned_to.username }}</strong> &bull; Approved by Boss</span>
+                  </div>
+                  {% elif task.original_assigned_to == user %}
+                  <div class="small text-muted fst-italic">Originally assigned to you &bull; Now handled by {{ task.assigned_to.full_name|default:task.assigned_to.username }}</div>
+                  {% endif %}
+                {% endif %}
+              </div>
+            {% endif %}
+
           </div>
         </div>
 
       </div>
     </div>
+
+    <!-- MODAL: Reallocate Task (For Employee) -->
+    <div class="modal fade" id="reallocateModal_{{ task.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right text-warning me-2"></i> Delegate / Re-allocate Task</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="post" action="{% url 'reports:task_reallocate' task.id %}">
+            {% csrf_token %}
+            <div class="modal-body p-4">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Task:</label>
+                <div class="p-2 rounded bg-body-tertiary border fw-semibold">{{ task.title }}</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Select Colleague to Allocate Task To *</label>
+                <select name="reallocate_to" class="form-select" required>
+                  <option value="">Choose employee...</option>
+                  {% for emp in active_employees %}
+                    {% if emp != user %}
+                    <option value="{{ emp.id }}">{{ emp.full_name|default:emp.username }} (@{{ emp.username }})</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+                <div class="form-text">Both your Boss and this employee will receive instant notifications.</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Reason for Re-allocating *</label>
+                <textarea name="reason" class="form-control" rows="3" placeholder="Why are you transferring this task? (e.g. Occupied with returns container 3, assigned to client dispatch)..." required></textarea>
+              </div>
+            </div>
+            <div class="modal-footer border-top">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-warning fw-bold px-4">
+                <i class="bi bi-send-check-fill me-1"></i> Re-allocate Task
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Boss Remark & Revert to Pending -->
+    {% if user.is_boss %}
+    <div class="modal fade" id="remarkModal_{{ task.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title fw-bold"><i class="bi bi-chat-left-dots text-danger me-2"></i> Boss Remark & Revision</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="post" action="{% url 'reports:task_remark' task.id %}">
+            {% csrf_token %}
+            <div class="modal-body p-4">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Task:</label>
+                <div class="p-2 rounded bg-body-tertiary border fw-semibold">{{ task.title }}</div>
+                <div class="small text-muted mt-1">Assignee: <strong>{{ task.assigned_to.full_name|default:task.assigned_to.username }}</strong></div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Feedback / Incomplete Details *</label>
+                <textarea name="remark" class="form-control" rows="3" placeholder="Specify what is missing or what needs revision..." required></textarea>
+                <div class="form-text text-danger">Submitting this remark will automatically revert the task to <strong>Pending</strong> status and notify the employee.</div>
+              </div>
+            </div>
+            <div class="modal-footer border-top">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger fw-bold px-4">
+                <i class="bi bi-send-exclamation-fill me-1"></i> Send Remark & Revert to Pending
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- MODAL: History & Delegation Timeline -->
+    <div class="modal fade" id="historyModal_{{ task.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content modal-content-custom">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title fw-bold"><i class="bi bi-clock-history text-primary me-2"></i> Task Delegation & Remarks History</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4">
+            <h6 class="fw-bold mb-1">{{ task.title }}</h6>
+            <div class="small text-muted mb-4">Allocated by <strong>{{ task.assigned_by.full_name|default:task.assigned_by.username }}</strong> on {{ task.created_at|date:"M d, Y H:i" }}</div>
+
+            <!-- Delegation History -->
+            <div class="mb-4">
+              <h6 class="fw-bold text-primary"><i class="bi bi-arrow-left-right me-1"></i> Delegation Trail</h6>
+              <div class="p-3 rounded bg-body-tertiary border">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <span class="badge bg-primary">Original Allocation</span>
+                  <span class="small fw-semibold">{{ task.original_assigned_to.full_name|default:task.original_assigned_to.username }}</span>
+                </div>
+                {% for r in task.reallocations.all %}
+                <div class="border-start border-3 border-warning ps-3 my-2 ms-2">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="fw-semibold text-warning-emphasis">
+                      <i class="bi bi-arrow-right-short"></i> Delegated to <strong>{{ r.reallocated_to.full_name|default:r.reallocated_to.username }}</strong> by {{ r.reallocated_by.full_name|default:r.reallocated_by.username }}
+                    </div>
+                    <span class="badge text-muted p-0 small">{{ r.created_at|date:"M d, H:i" }}</span>
+                  </div>
+                  <div class="small text-muted mt-1">Reason: <em>"{{ r.reason }}"</em></div>
+                </div>
+                {% empty %}
+                <div class="small text-muted">No re-allocations made. Task remains with the initial assignee.</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Boss Remarks History -->
+            <div>
+              <h6 class="fw-bold text-danger"><i class="bi bi-chat-left-dots-fill me-1"></i> Boss Remarks History</h6>
+              <div class="p-3 rounded bg-body-tertiary border">
+                {% for rmk in task.remarks.all %}
+                <div class="p-2 mb-2 rounded bg-danger bg-opacity-10 border border-danger-subtle">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-danger"><i class="bi bi-person-fill me-1"></i> {{ rmk.boss.full_name|default:rmk.boss.username }}</span>
+                    <span class="small text-muted">{{ rmk.created_at|date:"M d, Y H:i" }}</span>
+                  </div>
+                  <div class="small text-body mt-1">{{ rmk.remark }}</div>
+                </div>
+                {% empty %}
+                <div class="small text-muted">No remarks recorded for this task.</div>
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer border-top">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     {% empty %}
     <div class="col-12 text-center py-5">
       <div class="card card-stat border-0 shadow-sm p-5">
@@ -194,7 +443,7 @@
         <h4 class="fw-bold">No Tasks Found</h4>
         <p class="text-muted">
           {% if user.is_boss %}
-          No assigned tasks match your filter criteria. Click "Assign New Task" to create one.
+          No assigned tasks match your filter criteria. Click "Allocate New Task" to create one.
           {% else %}
           You have no tasks assigned to you matching your filter criteria.
           {% endif %}
@@ -212,7 +461,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content modal-content-custom">
       <div class="modal-header border-bottom">
-        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i> Assign New Task to Employee</h5>
+        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i> Allocate New Task to Employee</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="post" action="{% url 'reports:task_create' %}">
@@ -221,11 +470,11 @@
           
           <div class="mb-3">
             <label class="form-label fw-semibold">Task Title *</label>
-            <input type="text" name="title" class="form-control" required placeholder="e.g. Prepare Q3 GST Audit Documents">
+            <input type="text" name="title" class="form-control" required placeholder="e.g. Complete the returns for container 4">
           </div>
 
           <div class="mb-3">
-            <label class="form-label fw-semibold">Assign To Employee *</label>
+            <label class="form-label fw-semibold">Allocate To Employee *</label>
             <select name="assigned_to" class="form-select" required>
               <option value="">Select Employee...</option>
               {% for emp in active_employees %}
@@ -236,7 +485,7 @@
 
           <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6">
-              <label class="form-label fw-semibold">Boss Set Priority *</label>
+              <label class="form-label fw-semibold">Priority *</label>
               <select name="priority" class="form-select">
                 <option value="LOW">Low</option>
                 <option value="MEDIUM" selected>Medium</option>
@@ -252,15 +501,15 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label fw-semibold">Task Instructions / Description</label>
-            <textarea name="description" class="form-control" rows="4" placeholder="Provide clear task details or instructions..."></textarea>
+            <label class="form-label fw-semibold">Instructions / Details</label>
+            <textarea name="description" class="form-control" rows="3" placeholder="Provide clear task instructions or notes..."></textarea>
           </div>
 
         </div>
         <div class="modal-footer border-top">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary fw-bold px-4">
-            <i class="bi bi-check-lg me-1"></i> Assign Task
+            <i class="bi bi-check-lg me-1"></i> Allocate Task
           </button>
         </div>
       </form>
