@@ -47,20 +47,21 @@
   {% endif %}
 
   <!-- Top Header & Actions -->
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
     <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-clipboard-check-fill text-primary me-2"></i> Compliance Report</h2>
-      <p class="text-muted mb-0">Monthly compliance status for companies (Viewing: <strong>{{ month_name }} {{ selected_year }}</strong> compliance)</p>
+      <h2 class="fw-bold mb-1 fs-4"><i class="bi bi-clipboard-check-fill text-primary me-1 me-md-2"></i> Compliance Report</h2>
+      <p class="text-muted mb-0 d-none d-md-block">Monthly compliance status for companies (Viewing: <strong>{{ month_name }} {{ selected_year }}</strong> compliance)</p>
     </div>
 
     <!-- Actions & Month Navigator -->
-    <div class="d-flex flex-wrap align-items-center gap-2">
+    <div class="d-flex align-items-center gap-1 gap-md-2">
       <!-- Month Selector -->
-      <a href="{% url 'compliance:compliance_report_by_month' prev_year prev_month %}" class="btn btn-outline-secondary btn-sm" title="Previous Month">
+      <a href="{% url 'compliance:compliance_report_by_month' prev_year prev_month %}" class="btn btn-outline-secondary btn-sm px-2" title="Previous Month">
         <i class="bi bi-chevron-left"></i>
       </a>
 
-      <form method="get" action="{% url 'compliance:compliance_report' %}" class="d-flex align-items-center gap-2 month-nav-form">
+      <!-- Desktop Month & Year Form (Hidden on Mobile) -->
+      <form method="get" action="{% url 'compliance:compliance_report' %}" class="d-none d-md-flex align-items-center gap-2 month-nav-form">
         <select name="month" class="form-select form-select-sm month-select-dropdown" onchange="this.form.submit()">
           {% for m_num, m_name in months_list %}
           <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
@@ -73,7 +74,12 @@
         </select>
       </form>
 
-      <a href="{% url 'compliance:compliance_report_by_month' next_year next_month %}" class="btn btn-outline-secondary btn-sm" title="Next Month">
+      <!-- Mobile Calendar Icon Button (Visible on Mobile Only) -->
+      <button type="button" class="btn btn-outline-secondary btn-sm d-flex d-md-none align-items-center justify-content-center px-2.5 py-1.5" data-bs-toggle="modal" data-bs-target="#monthPickerModal" title="Select Month & Year">
+        <i class="bi bi-calendar3 fs-6"></i>
+      </button>
+
+      <a href="{% url 'compliance:compliance_report_by_month' next_year next_month %}" class="btn btn-outline-secondary btn-sm px-2" title="Next Month">
         <i class="bi bi-chevron-right"></i>
       </a>
     </div>
@@ -336,6 +342,46 @@
       <div>
         <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Close</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Mobile Month & Year Picker -->
+<div class="modal fade" id="monthPickerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content modal-content-custom">
+      <div class="modal-header border-bottom py-2.5 px-3">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2 mb-0">
+          <i class="bi bi-calendar3 text-primary"></i> Select Month & Year
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="get" action="{% url 'compliance:compliance_report' %}">
+        <div class="modal-body p-3">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted mb-1">Month</label>
+            <select name="month" class="form-select">
+              {% for m_num, m_name in months_list %}
+              <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Year</label>
+            <select name="year" class="form-select">
+              {% for y in years_list %}
+              <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-top py-2 px-3">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-bold px-3">
+            <i class="bi bi-check2 me-1"></i> View Report
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

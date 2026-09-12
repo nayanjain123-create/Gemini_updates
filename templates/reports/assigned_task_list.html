@@ -2,11 +2,250 @@
 
 {% block title %}Tasks & Workflow Tracking - Gemini Insights{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* Modern Task Card */
+  .task-card {
+    background: var(--bg-card, #1E293B) !important;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: 14px !important;
+    padding: 1.1rem 1.15rem 1rem !important;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  }
+  .task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16) !important;
+  }
+
+  /* Sleek top status accent line */
+  .task-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 2;
+  }
+  .task-card.task-status-approved::before {
+    background: linear-gradient(90deg, #22C55E 0%, #10B981 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(34, 197, 94, 0.35);
+  }
+  .task-card.task-status-waiting::before {
+    background: linear-gradient(90deg, #A855F7 0%, #6366F1 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(168, 85, 247, 0.35);
+  }
+  .task-card.task-status-pending::before {
+    background: linear-gradient(90deg, #F59E0B 0%, #FBBF24 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(245, 158, 11, 0.35);
+  }
+  .task-card.task-status-inprogress::before {
+    background: linear-gradient(90deg, #3B82F6 0%, #06B6D4 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(59, 130, 246, 0.35);
+  }
+
+  /* Subtle ambient glow matching status */
+  .task-card.task-status-approved {
+    background-image: radial-gradient(circle at 95% 10%, rgba(34, 197, 94, 0.08) 0%, transparent 55%) !important;
+  }
+  .task-card.task-status-waiting {
+    background-image: radial-gradient(circle at 95% 10%, rgba(168, 85, 247, 0.09) 0%, transparent 55%) !important;
+  }
+  .task-card.task-status-pending {
+    background-image: radial-gradient(circle at 95% 10%, rgba(245, 158, 11, 0.08) 0%, transparent 55%) !important;
+  }
+
+  /* Icon action buttons */
+  .task-icon-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+    transition: all 0.18s ease;
+    font-size: 0.8rem;
+    text-decoration: none !important;
+  }
+  .task-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    border-color: var(--text-muted);
+  }
+  .task-icon-btn.text-danger:hover {
+    background: rgba(239, 68, 68, 0.14) !important;
+    color: #F87171 !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+  }
+
+  /* Callout styling */
+  .task-callout {
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .task-card-title {
+    font-size: 1.05rem;
+    line-height: 1.35;
+    min-height: 2.8rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  @media (max-width: 767.98px) {
+    .task-card-title {
+      min-height: auto;
+    }
+  }
+  .text-purple {
+    color: #C084FC !important;
+  }
+  .border-purple {
+    border-color: #A855F7 !important;
+  }
+  .task-callout-warning {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.22);
+  }
+  .task-callout-danger {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.22);
+  }
+  .task-callout-purple {
+    background: rgba(168, 85, 247, 0.08);
+    border: 1px solid rgba(168, 85, 247, 0.22);
+  }
+  .task-callout-success {
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.22);
+  }
+  .task-callout-neutral {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  /* Self-contained KPI Card styles - renders instantly without needing hard refresh */
+  .kpi-card-modern {
+    background: var(--bg-card, #1E293B) !important;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: 16px !important;
+    padding: 1rem 0.95rem 0.85rem !important;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14) !important;
+  }
+  .kpi-card-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22) !important;
+  }
+  .kpi-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 2;
+  }
+  .kpi-card-modern.accent-success::before {
+    background: linear-gradient(90deg, #22C55E 0%, #10B981 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(34, 197, 94, 0.4);
+  }
+  .kpi-card-modern.accent-purple::before {
+    background: linear-gradient(90deg, #A855F7 0%, #6366F1 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(168, 85, 247, 0.4);
+  }
+  .kpi-card-modern.accent-primary::before {
+    background: linear-gradient(90deg, #3B82F6 0%, #06B6D4 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(59, 130, 246, 0.4);
+  }
+  .kpi-card-modern.accent-warning::before {
+    background: linear-gradient(90deg, #F59E0B 0%, #FBBF24 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(245, 158, 11, 0.4);
+  }
+  .kpi-card-modern.accent-secondary::before {
+    background: linear-gradient(90deg, #64748B 0%, #94A3B8 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(100, 116, 139, 0.4);
+  }
+  .kpi-card-modern.accent-success {
+    background-image: radial-gradient(circle at 85% 15%, rgba(34, 197, 94, 0.12) 0%, transparent 60%) !important;
+  }
+  .kpi-card-modern.accent-purple {
+    background-image: radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.14) 0%, transparent 60%) !important;
+  }
+  .kpi-card-modern.accent-primary {
+    background-image: radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 60%) !important;
+  }
+  .kpi-card-modern.accent-warning {
+    background-image: radial-gradient(circle at 85% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 60%) !important;
+  }
+  .kpi-card-modern.accent-secondary {
+    background-image: radial-gradient(circle at 85% 15%, rgba(100, 116, 139, 0.12) 0%, transparent 60%) !important;
+  }
+  [data-theme="light"] .kpi-card-modern,
+  html:not([data-theme="dark"]) .kpi-card-modern {
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+  }
+  .kpi-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #94A3B8);
+  }
+  .kpi-number {
+    font-size: 1.65rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0.35rem 0 0.25rem;
+    letter-spacing: -0.02em;
+  }
+  .kpi-badge-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  .badge-primary-subtle { background: rgba(59, 130, 246, 0.14); color: #60A5FA; }
+  .badge-warning-subtle { background: rgba(245, 158, 11, 0.14); color: #FBBF24; }
+  .badge-purple-subtle { background: rgba(168, 85, 247, 0.14); color: #C084FC; }
+  .badge-success-subtle { background: rgba(34, 197, 94, 0.14); color: #4ADE80; }
+  .badge-secondary-subtle { background: rgba(100, 116, 139, 0.14); color: #94A3B8; }
+
+  /* Filters single-line scrollbar */
+  .filter-scroll-row {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .filter-scroll-row::-webkit-scrollbar {
+    display: none;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid my-3">
 
-  <!-- Header Banner -->
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+  <!-- Desktop Header Banner -->
+  <div class="d-none d-md-flex justify-content-between align-items-center mb-4 gap-3">
     <div>
       <h2 class="fw-bold mb-1"><i class="bi bi-list-check text-primary me-2"></i> Assigned Tasks & Workflow</h2>
       <p class="text-muted mb-0">
@@ -18,7 +257,7 @@
       </p>
     </div>
 
-    <div class="d-flex gap-2">
+    <div>
       {% if user.is_boss %}
       <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#assignTaskModal">
         <i class="bi bi-plus-lg me-1"></i> Allocate New Task
@@ -27,13 +266,32 @@
     </div>
   </div>
 
+  <!-- Mobile Header Banner -->
+  <div class="d-flex d-md-none align-items-center justify-content-between mb-3">
+    <h2 class="fw-bold mb-0">Assign Task</h2>
+    {% if user.is_boss %}
+    <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3 py-1.5 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#assignTaskModal">
+      <i class="bi bi-plus-lg"></i> Task
+    </button>
+    {% elif not user.is_boss %}
+    <span class="text-muted small">My Tasks</span>
+    {% endif %}
+  </div>
+
   <!-- Summary Metric Cards -->
-  <div class="row g-3 mb-4">
+  <div class="row g-2 g-sm-3 mb-3 mb-md-4">
     <div class="col-6 col-md-3 col-xl">
       <a href="{% url 'reports:task_list' %}" class="text-decoration-none">
-        <div class="card card-stat border-0 shadow-sm border-start border-4 border-primary h-100">
-          <div class="card-stat-title">Total Tasks</div>
-          <div class="card-stat-value">{{ total_assigned_count }}</div>
+        <div class="card kpi-card-modern accent-primary h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+              <span class="kpi-label">Total Tasks</span>
+              <div class="kpi-badge-icon badge-primary-subtle">
+                <i class="bi bi-list-task"></i>
+              </div>
+            </div>
+            <div class="kpi-number text-primary">{{ total_assigned_count }}</div>
+          </div>
           <div class="small text-muted mt-1">{% if user.is_boss %}All staff{% else %}Assigned to you{% endif %}</div>
         </div>
       </a>
@@ -41,9 +299,16 @@
 
     <div class="col-6 col-md-3 col-xl">
       <a href="{% url 'reports:task_list' %}?status=PENDING" class="text-decoration-none">
-        <div class="card card-stat border-0 shadow-sm border-start border-4 border-warning h-100">
-          <div class="card-stat-title">Pending</div>
-          <div class="card-stat-value text-warning">{{ pending_count }}</div>
+        <div class="card kpi-card-modern accent-warning h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+              <span class="kpi-label">Pending</span>
+              <div class="kpi-badge-icon badge-warning-subtle">
+                <i class="bi bi-clock-history"></i>
+              </div>
+            </div>
+            <div class="kpi-number" style="color: #FBBF24;">{{ pending_count }}</div>
+          </div>
           <div class="small text-muted mt-1">Awaiting action</div>
         </div>
       </a>
@@ -51,9 +316,16 @@
 
     <div class="col-6 col-md-3 col-xl">
       <a href="{% url 'reports:task_list' %}?status=WAITING_APPROVAL" class="text-decoration-none">
-        <div class="card card-stat border-0 shadow-sm border-start border-4 border-purple h-100">
-          <div class="card-stat-title">Awaiting Approval</div>
-          <div class="card-stat-value text-purple">{{ waiting_approval_count }}</div>
+        <div class="card kpi-card-modern accent-purple h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+              <span class="kpi-label">Awaiting Approval</span>
+              <div class="kpi-badge-icon badge-purple-subtle">
+                <i class="bi bi-hourglass-split"></i>
+              </div>
+            </div>
+            <div class="kpi-number" style="color: #C084FC;">{{ waiting_approval_count }}</div>
+          </div>
           <div class="small text-muted mt-1">Needs boss review</div>
         </div>
       </a>
@@ -61,19 +333,33 @@
 
     <div class="col-6 col-md-3 col-xl">
       <a href="{% url 'reports:task_list' %}?status=APPROVED" class="text-decoration-none">
-        <div class="card card-stat border-0 shadow-sm border-start border-4 border-success h-100">
-          <div class="card-stat-title">Approved</div>
-          <div class="card-stat-value text-success">{{ approved_count }}</div>
+        <div class="card kpi-card-modern accent-success h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+              <span class="kpi-label">Approved</span>
+              <div class="kpi-badge-icon badge-success-subtle">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+            </div>
+            <div class="kpi-number text-success">{{ approved_count }}</div>
+          </div>
           <div class="small text-muted mt-1">Completed & approved</div>
         </div>
       </a>
     </div>
 
-    <div class="col-6 col-md-3 col-xl">
+    <div class="col-12 col-md-3 col-xl">
       <a href="{% url 'reports:task_list' %}?reallocated=1" class="text-decoration-none">
-        <div class="card card-stat border-0 shadow-sm border-start border-4 border-secondary h-100">
-          <div class="card-stat-title">Delegated</div>
-          <div class="card-stat-value text-secondary">{{ reallocated_count }}</div>
+        <div class="card kpi-card-modern accent-secondary h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+              <span class="kpi-label">Delegated</span>
+              <div class="kpi-badge-icon badge-secondary-subtle">
+                <i class="bi bi-arrow-left-right"></i>
+              </div>
+            </div>
+            <div class="kpi-number text-secondary">{{ reallocated_count }}</div>
+          </div>
           <div class="small text-muted mt-1">Delegated tasks</div>
         </div>
       </a>
@@ -82,17 +368,19 @@
 
   <!-- Search & Filter Bar -->
   <div class="card card-stat border-0 shadow-sm mb-4">
-    <div class="card-body p-3">
-      <form method="get" id="taskFilterForm" class="row g-3 align-items-center">
-        <div class="col-12 col-md-3">
-          <div class="input-group">
+    <div class="card-body p-2 p-md-3">
+      <form method="get" id="taskFilterForm" class="d-flex flex-nowrap align-items-center gap-2 overflow-x-auto filter-scroll-row">
+        <!-- Search Input (Desktop Only) -->
+        <div class="flex-grow-1 d-none d-md-block" style="min-width: 160px;">
+          <div class="input-group input-group-sm">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
             <input type="text" name="q" class="form-control" placeholder="Search tasks..." value="{{ q_search }}" onchange="document.getElementById('taskFilterForm').submit()">
           </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-md-2">
-          <select name="status" class="form-select" onchange="this.form.submit()">
+        <!-- Status Filter (Mobile & Desktop) -->
+        <div class="flex-grow-1 flex-md-grow-0" style="min-width: 130px;">
+          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
             <option value="">All Statuses</option>
             {% for code, label in status_choices %}
             {% if code != 'IN_PROGRESS' %}
@@ -102,8 +390,9 @@
           </select>
         </div>
 
-        <div class="col-12 col-sm-6 col-md-2">
-          <select name="priority" class="form-select" onchange="this.form.submit()">
+        <!-- Priority Filter (Desktop Only) -->
+        <div class="d-none d-md-block" style="min-width: 125px; flex-shrink: 0;">
+          <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
             <option value="">All Priorities</option>
             {% for code, label in priority_choices %}
             <option value="{{ code }}" {% if priority_filter == code %}selected{% endif %}>{{ label }}</option>
@@ -112,8 +401,9 @@
         </div>
 
         {% if user.is_boss %}
-        <div class="col-12 col-sm-6 col-md-2">
-          <select name="employee" class="form-select" onchange="this.form.submit()">
+        <!-- Assignee Filter (Mobile & Desktop) -->
+        <div class="flex-grow-1 flex-md-grow-0" style="min-width: 130px;">
+          <select name="employee" class="form-select form-select-sm" onchange="this.form.submit()">
             <option value="">All Assignees</option>
             {% for emp in active_employees %}
             <option value="{{ emp.id }}" {% if emp_filter == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.full_name|default:emp.username }}</option>
@@ -123,8 +413,11 @@
         {% endif %}
 
         {% if q_search or status_filter or priority_filter or emp_filter or reallocated_filter %}
-        <div class="col-auto ms-auto">
-          <a href="{% url 'reports:task_list' %}" class="btn btn-outline-danger btn-sm px-3" title="Clear Filters"><i class="bi bi-x-circle me-1"></i> Clear</a>
+        <!-- Clear Button -->
+        <div class="flex-shrink-0">
+          <a href="{% url 'reports:task_list' %}" class="btn btn-outline-danger btn-sm px-2.5 text-nowrap d-inline-flex align-items-center justify-content-center" title="Clear Filters">
+            <i class="bi bi-x-circle"></i><span class="d-none d-md-inline ms-1">Clear</span>
+          </a>
         </div>
         {% endif %}
       </form>
@@ -135,159 +428,179 @@
   <div class="row g-3">
     {% for task in tasks %}
     <div class="col-12 col-md-6 col-xl-4">
-      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 
-        {% if task.status == 'APPROVED' %}border-success
-        {% elif task.status == 'WAITING_APPROVAL' %}border-purple
-        {% elif task.status == 'IN_PROGRESS' %}border-info
-        {% else %}border-warning{% endif %}">
+      <div class="card task-card h-100 d-flex flex-column justify-content-between 
+        {% if task.status == 'APPROVED' %}task-status-approved
+        {% elif task.status == 'WAITING_APPROVAL' %}task-status-waiting
+        {% elif task.status == 'IN_PROGRESS' %}task-status-inprogress
+        {% else %}task-status-pending{% endif %}">
         
-        <!-- Header & Badges -->
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <div class="d-flex flex-wrap gap-1 align-items-center">
-            <!-- Priority Badge -->
-            {% if task.priority == 'URGENT' %}
-              <span class="badge bg-danger text-white"><i class="bi bi-exclamation-octagon-fill me-1"></i> Urgent</span>
-            {% elif task.priority == 'HIGH' %}
-              <span class="badge bg-warning text-dark"><i class="bi bi-arrow-up-circle-fill me-1"></i> High</span>
-            {% elif task.priority == 'MEDIUM' %}
-              <span class="badge bg-info text-white">Medium</span>
-            {% else %}
-              <span class="badge bg-secondary text-white">Low</span>
-            {% endif %}
+        <div>
+          <!-- Header & Badges -->
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex flex-wrap gap-1 align-items-center">
+              <!-- Priority Badge Only -->
+              {% if task.priority == 'URGENT' %}
+                <span class="kpi-mini-pill kpi-pill-danger"><i class="bi bi-fire"></i> Urgent</span>
+              {% elif task.priority == 'HIGH' %}
+                <span class="kpi-mini-pill kpi-pill-warning"><i class="bi bi-arrow-up-circle-fill"></i> High</span>
+              {% elif task.priority == 'MEDIUM' %}
+                <span class="kpi-mini-pill kpi-pill-info">Medium</span>
+              {% else %}
+                <span class="kpi-mini-pill" style="background: rgba(148,163,184,0.14); color: #94A3B8; border: 1px solid rgba(148,163,184,0.22);">Low</span>
+              {% endif %}
+            </div>
 
-            <!-- Status Badge -->
-            {% if task.status == 'APPROVED' %}
-              <span class="badge badge-completed"><i class="bi bi-check-circle-fill me-1"></i> Approved</span>
-            {% elif task.status == 'WAITING_APPROVAL' %}
-              <span class="badge bg-purple text-white"><i class="bi bi-hourglass-split me-1"></i> Waiting Approval</span>
-            {% elif task.status == 'IN_PROGRESS' %}
-              <span class="badge badge-inprogress"><i class="bi bi-play-circle-fill me-1"></i> In Progress</span>
-            {% else %}
-              <span class="badge badge-pending"><i class="bi bi-clock-history me-1"></i> Pending</span>
-            {% endif %}
-
-            <!-- Reallocated Badge -->
-            {% if task.is_reallocated %}
-              <span class="badge bg-secondary bg-opacity-10 text-secondary border"><i class="bi bi-arrow-left-right me-1"></i> Delegated</span>
-            {% endif %}
+            <div class="d-flex gap-1 align-items-center">
+              {% if user.is_boss %}
+              <a href="{% url 'reports:task_edit' task.id %}" class="task-icon-btn text-primary" title="Edit Task Details">
+                <i class="bi bi-pencil-fill"></i>
+              </a>
+              <form method="post" action="{% url 'reports:task_delete' task.id %}" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to delete task &quot;{{ task.title|escapejs }}&quot;?');">
+                {% csrf_token %}
+                <button type="submit" class="task-icon-btn text-danger" title="Delete Task">
+                  <i class="bi bi-trash3-fill"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
           </div>
 
-          <div class="d-flex gap-1">
-            <!-- View History Modal Trigger -->
-            <button type="button" class="btn btn-sm btn-outline-secondary p-1 px-2" data-bs-toggle="modal" data-bs-target="#historyModal_{{ task.id }}" title="View Allocation & Remarks History">
-              <i class="bi bi-clock-history"></i>
-            </button>
-            {% if user.is_boss %}
-            <a href="{% url 'reports:task_edit' task.id %}" class="btn btn-sm btn-outline-primary p-1 px-2" title="Edit Task Details">
-              <i class="bi bi-pencil-fill"></i>
-            </a>
-            {% endif %}
+          <!-- Task Title & Description -->
+          <h5 class="fw-bold text-body task-card-title mb-1">{{ task.title }}</h5>
+          {% if task.description %}
+          <p class="text-muted small mb-2 text-break">{{ task.description }}</p>
+          {% endif %}
+
+          <!-- Callouts Section: Ensures every card has balanced, informative content -->
+          {% if task.is_reallocated %}
+          <div class="task-callout task-callout-warning my-2">
+            <div class="d-flex align-items-center gap-1 fw-bold text-warning-emphasis small">
+              <i class="bi bi-arrow-left-right"></i> Delegated from {{ task.original_assigned_to.full_name|default:task.original_assigned_to.username }}:
+            </div>
+            <div class="small fst-italic text-muted mt-1 ps-2 border-start border-warning border-2">
+              "{{ task.reallocation_reason }}"
+            </div>
           </div>
+          {% elif task.boss_remark %}
+          <div class="task-callout task-callout-danger my-2">
+            <div class="d-flex align-items-center gap-1 fw-bold text-danger small">
+              <i class="bi bi-exclamation-octagon-fill"></i> Boss Remark:
+            </div>
+            <div class="small text-danger-emphasis mt-1 ps-2 border-start border-danger border-2">
+              {{ task.boss_remark }}
+            </div>
+          </div>
+          {% elif task.status == 'WAITING_APPROVAL' %}
+          <div class="task-callout task-callout-purple my-2">
+            <div class="d-flex align-items-center gap-1 fw-bold text-purple small">
+              <i class="bi bi-hourglass-split"></i> Awaiting Boss Review:
+            </div>
+            <div class="small text-muted mt-1 ps-2 border-start border-purple border-2">
+              Work submitted. Ready for your review & approval
+            </div>
+          </div>
+          {% elif task.status == 'APPROVED' %}
+          <div class="task-callout task-callout-success my-2">
+            <div class="d-flex align-items-center gap-1 fw-bold text-success small">
+              <i class="bi bi-check-circle-fill"></i> Verified & Completed:
+            </div>
+            <div class="small text-muted mt-1 ps-2 border-start border-success border-2">
+              Task finished by <strong>{{ task.assigned_to.full_name|default:task.assigned_to.username }}</strong>. Verified & closed.
+            </div>
+          </div>
+          {% elif task.status == 'PENDING' and not task.description %}
+          <div class="task-callout task-callout-neutral my-2">
+            <div class="d-flex align-items-center gap-1 fw-bold text-muted small">
+              <i class="bi bi-clock-history"></i> Current Assignment:
+            </div>
+            <div class="small text-muted mt-1 ps-2 border-start border-secondary border-2">
+              Assigned to <strong>{{ task.assigned_to.full_name|default:task.assigned_to.username }}</strong>. Work in progress.
+            </div>
+          </div>
+          {% endif %}
         </div>
 
-        <!-- Task Title & Description -->
-        <h5 class="fw-bold mb-2 text-body">{{ task.title }}</h5>
-        {% if task.description %}
-        <p class="text-muted small mb-3 text-break">{{ task.description }}</p>
-        {% endif %}
-
-        <!-- Reallocation Notice Callout -->
-        {% if task.is_reallocated %}
-        <div class="p-2 mb-2 rounded bg-warning bg-opacity-10 border border-warning-subtle small text-body">
-          <div class="fw-bold text-warning-emphasis"><i class="bi bi-arrow-left-right me-1"></i> Delegated from {{ task.original_assigned_to.full_name|default:task.original_assigned_to.username }}:</div>
-          <div class="fst-italic mt-1 text-muted">"{{ task.reallocation_reason }}"</div>
-        </div>
-        {% endif %}
-
-        <!-- Boss Remark Notice Callout -->
-        {% if task.boss_remark %}
-        <div class="p-2 mb-2 rounded bg-danger bg-opacity-10 border border-danger-subtle small text-body">
-          <div class="fw-bold text-danger"><i class="bi bi-exclamation-octagon-fill me-1"></i> Boss Remark (Action Required):</div>
-          <div class="mt-1 text-danger-emphasis">{{ task.boss_remark }}</div>
-        </div>
-        {% endif %}
-
-        <div class="mt-auto pt-3 border-top d-flex flex-column gap-2">
+        <div class="mt-auto pt-3 border-top">
           <!-- Assignee & Due Date -->
-          <div class="d-flex justify-content-between align-items-center small text-muted">
+          <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
             <div>
-              <i class="bi bi-person-badge me-1"></i> Assigned To: <strong class="text-body">{{ task.assigned_to.full_name|default:task.assigned_to.username }}</strong>
+              <i class="bi bi-person-badge text-secondary me-1"></i> Assigned To: <strong class="text-body">{{ task.assigned_to.full_name|default:task.assigned_to.username }}</strong>
             </div>
             {% if task.due_date %}
-            <div>
-              <i class="bi bi-calendar-event me-1"></i> Due: <strong>{{ task.due_date|date:"M d, Y" }}</strong>
+            <div class="text-nowrap">
+              <i class="bi bi-calendar-event text-secondary me-1"></i> Due: <strong class="text-body">{{ task.due_date|date:"M d, Y" }}</strong>
             </div>
             {% endif %}
           </div>
 
-          <div class="small text-muted">
-            <i class="bi bi-shield-lock me-1"></i> Created by <strong>{{ task.assigned_by.full_name|default:task.assigned_by.username }}</strong> on {{ task.created_at|date:"M d, Y" }}
+          <div class="small text-muted mb-3">
+            <i class="bi bi-shield-check text-secondary me-1"></i> Created by <strong>{{ task.assigned_by.full_name|default:task.assigned_by.username }}</strong> on {{ task.created_at|date:"M d, Y" }}
           </div>
 
           <!-- ACTION BUTTONS SECTION -->
-          <div class="mt-2 pt-2 border-top">
-            
-            {% if user.is_boss %}
-              <!-- BOSS ACTIONS -->
-              <div class="d-flex flex-wrap gap-2 align-items-center">
-                {% if task.status == 'WAITING_APPROVAL' %}
-                  <form method="post" action="{% url 'reports:task_approve' task.id %}" class="d-inline flex-grow-1">
+          {% if user.is_boss %}
+            <!-- BOSS ACTIONS -->
+            <div>
+              {% if task.status == 'WAITING_APPROVAL' %}
+                <div class="d-flex gap-2 align-items-center">
+                  <form method="post" action="{% url 'reports:task_approve' task.id %}" class="flex-grow-1 m-0">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm">
-                      <i class="bi bi-check2-circle me-1"></i> Approve Task
+                    <button type="submit" class="btn btn-sm btn-success fw-bold w-100 py-1.5 shadow-sm d-flex align-items-center justify-content-center gap-1">
+                      <i class="bi bi-check2-circle fs-6"></i> Approve Task
                     </button>
                   </form>
-                  <button type="button" class="btn btn-sm btn-outline-danger fw-bold flex-grow-1" data-bs-toggle="modal" data-bs-target="#remarkModal_{{ task.id }}">
-                    <i class="bi bi-chat-dots me-1"></i> Add Remark
+                  <button type="button" class="btn btn-sm fw-semibold px-3 py-1.5 d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#remarkModal_{{ task.id }}" style="background: rgba(239, 68, 68, 0.12); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.28);">
+                    <i class="bi bi-chat-dots"></i> Add Remark
                   </button>
-                {% elif task.status == 'APPROVED' %}
-                  <span class="badge badge-completed p-2 w-100 text-center"><i class="bi bi-check-all me-1"></i> Task Approved</span>
-                {% else %}
-                  <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#remarkModal_{{ task.id }}">
-                    <i class="bi bi-chat-left-text me-1"></i> Add Boss Feedback / Remark
-                  </button>
-                {% endif %}
-              </div>
+                </div>
+              {% elif task.status == 'APPROVED' %}
+                <div class="d-flex align-items-center justify-content-center py-1.5 px-3 rounded-2" style="background: rgba(34, 197, 94, 0.12); color: #4ADE80; font-size: 0.82rem; font-weight: 600; border: 1px solid rgba(34, 197, 94, 0.28); min-height: 33px;">
+                  <i class="bi bi-check2-all me-1 fs-6"></i> Task Approved
+                </div>
+              {% else %}
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-1.5 fw-semibold d-flex align-items-center justify-content-center gap-1" data-bs-toggle="modal" data-bs-target="#remarkModal_{{ task.id }}">
+                  <i class="bi bi-chat-left-text"></i> Add Boss Feedback / Remark
+                </button>
+              {% endif %}
+            </div>
 
-            {% else %}
-              <!-- EMPLOYEE ACTIONS -->
-              <div class="d-flex flex-column gap-2">
-                {% if task.assigned_to == user %}
-                  {% if task.status == 'WAITING_APPROVAL' %}
-                    <div class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-center justify-content-between">
-                      <span><i class="bi bi-hourglass-split me-1"></i> Submitted to Boss for Approval</span>
-                    </div>
-                  {% elif task.status == 'APPROVED' %}
-                    <div class="alert alert-success py-2 px-3 mb-0 small d-flex align-items-center justify-content-between">
-                      <span><i class="bi bi-check-circle-fill me-1"></i> Approved by Boss</span>
-                    </div>
-                  {% else %}
-                    <!-- Complete & Delegate Buttons -->
-                    <div class="d-flex gap-2">
-                      <form method="post" action="{% url 'reports:task_mark_complete' task.id %}" class="flex-grow-1">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-success fw-bold w-100 shadow-sm" title="Mark done and notify boss for approval">
-                          <i class="bi bi-check2-circle me-1"></i> Mark Completed
-                        </button>
-                      </form>
-                      <button type="button" class="btn btn-sm btn-outline-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#reallocateModal_{{ task.id }}" title="Delegate/Transfer task to a colleague">
-                        <i class="bi bi-arrow-left-right me-1"></i> Delegate
-                      </button>
-                    </div>
-                  {% endif %}
-                {% else %}
-                  {% if task.status == 'APPROVED' %}
-                  <div class="alert alert-success py-2 px-3 mb-0 small d-flex align-items-center justify-content-between">
-                    <span><i class="bi bi-check-circle-fill me-1"></i> Completed by <strong>{{ task.assigned_to.full_name|default:task.assigned_to.username }}</strong> &bull; Approved by Boss</span>
+          {% else %}
+            <!-- EMPLOYEE ACTIONS -->
+            <div>
+              {% if task.assigned_to == user %}
+                {% if task.status == 'WAITING_APPROVAL' %}
+                  <div class="d-flex align-items-center justify-content-center py-1.5 px-3 rounded-2" style="background: rgba(168, 85, 247, 0.12); color: #D8B4FE; font-size: 0.82rem; font-weight: 600; border: 1px solid rgba(168, 85, 247, 0.28); min-height: 33px;">
+                    <i class="bi bi-hourglass-split me-1"></i> Submitted to Boss for Approval
                   </div>
-                  {% elif task.original_assigned_to == user %}
-                  <div class="small text-muted fst-italic">Originally assigned to you &bull; Now handled by {{ task.assigned_to.full_name|default:task.assigned_to.username }}</div>
-                  {% endif %}
+                {% elif task.status == 'APPROVED' %}
+                  <div class="d-flex align-items-center justify-content-center py-1.5 px-3 rounded-2" style="background: rgba(34, 197, 94, 0.12); color: #4ADE80; font-size: 0.82rem; font-weight: 600; border: 1px solid rgba(34, 197, 94, 0.28); min-height: 33px;">
+                    <i class="bi bi-check-circle-fill me-1"></i> Approved by Boss
+                  </div>
+                {% else %}
+                  <!-- Complete & Delegate Buttons -->
+                  <div class="d-flex gap-2">
+                    <form method="post" action="{% url 'reports:task_mark_complete' task.id %}" class="flex-grow-1 m-0">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-success fw-bold w-100 py-1.5 shadow-sm d-flex align-items-center justify-content-center gap-1" title="Mark done and notify boss for approval">
+                        <i class="bi bi-check2-circle fs-6"></i> Mark Completed
+                      </button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-outline-warning fw-semibold px-3 py-1.5 d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#reallocateModal_{{ task.id }}" title="Delegate/Transfer task to a colleague">
+                      <i class="bi bi-arrow-left-right"></i> Delegate
+                    </button>
+                  </div>
                 {% endif %}
-              </div>
-            {% endif %}
-
-          </div>
+              {% else %}
+                {% if task.status == 'APPROVED' %}
+                <div class="d-flex align-items-center justify-content-center py-1.5 px-3 rounded-2" style="background: rgba(34, 197, 94, 0.12); color: #4ADE80; font-size: 0.82rem; font-weight: 600; border: 1px solid rgba(34, 197, 94, 0.28); min-height: 33px;">
+                  <i class="bi bi-check-circle-fill me-1"></i> Done by {{ task.assigned_to.full_name|default:task.assigned_to.username }}
+                </div>
+                {% elif task.original_assigned_to == user %}
+                <div class="small text-muted fst-italic text-center py-1">Originally assigned to you &bull; Now handled by {{ task.assigned_to.full_name|default:task.assigned_to.username }}</div>
+                {% endif %}
+              {% endif %}
+            </div>
+          {% endif %}
         </div>
 
       </div>

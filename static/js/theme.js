@@ -39,6 +39,9 @@
         }
       }
     });
+
+    // Dispatch custom event so charts and other components can react
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
   }
 
   // Apply immediately before DOM rendering to prevent flashing

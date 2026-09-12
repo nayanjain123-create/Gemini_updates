@@ -28,9 +28,174 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   
   <!-- Custom Design System CSS with cache buster -->
-  <link href="{% static 'css/theme.css' %}?v=20260910_7" rel="stylesheet">
+  <link href="{% static 'css/theme.css' %}?v=20260912_v4" rel="stylesheet">
 
   <style>
+    /* Mobile Sidebar & Drawer - Self-contained for zero cache desync */
+    .mobile-hamburger {
+      background: transparent;
+      border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main, #F1F5F9);
+      transition: all 0.18s;
+      flex-shrink: 0;
+    }
+    .mobile-hamburger:hover {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: var(--primary, #6366F1);
+      color: var(--primary, #6366F1);
+    }
+    .mobile-hamburger .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28148, 163, 184, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+      width: 22px;
+      height: 22px;
+    }
+    [data-theme="light"] .mobile-hamburger .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2830, 41, 59, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+
+    .mobile-sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 1060;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s ease;
+    }
+    .mobile-sidebar-overlay.open {
+      opacity: 1 !important;
+      pointer-events: all !important;
+    }
+
+    .mobile-sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: auto;
+      width: 290px;
+      max-width: 85vw;
+      height: 100vh;
+      background: var(--bg-card, #1E293B);
+      border-left: 1px solid var(--border-color, rgba(255,255,255,0.1));
+      border-right: none;
+      box-shadow: -6px 0 28px rgba(0, 0, 0, 0.45);
+      z-index: 1070;
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .mobile-sidebar.open {
+      transform: translateX(0) !important;
+    }
+
+    @media (max-width: 991.98px) {
+      .nav-buttons-group {
+        display: none !important;
+      }
+    }
+
+    .mobile-sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.1rem;
+      border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1));
+      flex-shrink: 0;
+    }
+    .mobile-sidebar-close {
+      background: transparent;
+      border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted, #94A3B8);
+      font-size: 1rem;
+      transition: all 0.18s;
+      flex-shrink: 0;
+    }
+    .mobile-sidebar-close:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #EF4444;
+      color: #EF4444;
+    }
+
+    .mobile-sidebar-user {
+      padding: 0.9rem 1.1rem;
+      border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1));
+      background: rgba(255, 255, 255, 0.03);
+      flex-shrink: 0;
+    }
+
+    .mobile-sidebar-nav {
+      padding: 0.85rem 0.65rem;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 3px;
+      flex: 1;
+    }
+    .mobile-sidebar-section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted, #94A3B8);
+      padding: 0.5rem 0.75rem 0.25rem;
+      margin: 0;
+      display: block !important;
+      width: 100%;
+    }
+    .mobile-sidebar-link {
+      display: flex !important;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      font-weight: 500;
+      color: var(--text-main, #F1F5F9) !important;
+      text-decoration: none !important;
+      transition: background 0.18s, color 0.18s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .mobile-sidebar-link:hover {
+      background: rgba(99, 102, 241, 0.12);
+      color: var(--primary, #6366F1) !important;
+    }
+    .mobile-sidebar-link.active {
+      background: var(--primary, #6366F1) !important;
+      color: #ffffff !important;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+    }
+    .mobile-sidebar-link i {
+      font-size: 1.1rem;
+      width: 1.3rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .mobile-sidebar-divider {
+      border-top: 1px solid var(--border-color, rgba(255,255,255,0.1));
+      margin: 0.5rem 0.5rem 0.6rem;
+      width: auto;
+    }
+
     /* Nav Icon Buttons: Grey Outline for Dark Theme, Black for Light Theme */
     .nav-tools-container {
       padding: 0.2rem 0.4rem;
@@ -78,6 +243,70 @@
     .nav-icon-btn.active {
       background-color: rgba(99, 102, 241, 0.18) !important;
     }
+    /* Notification Bell: transparent, no grey cover */
+    .nav-notif-btn {
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-secondary, #64748B);
+      transition: background 0.18s, color 0.18s;
+    }
+    .nav-notif-btn:hover,
+    .nav-notif-btn:focus,
+    .nav-notif-btn:active,
+    .nav-notif-btn[aria-expanded="true"] {
+      background: rgba(99, 102, 241, 0.1) !important;
+      color: var(--primary, #6366F1) !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Logout Confirmation Modal - KPI Card Style */
+    .logout-kpi-modal {
+      background: var(--bg-card, #1E293B) !important;
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08)) !important;
+      border-radius: 18px !important;
+      position: relative;
+      overflow: hidden;
+      background-image: radial-gradient(circle at 85% 15%, rgba(239, 68, 68, 0.12) 0%, transparent 60%),
+                        linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35) !important;
+      backdrop-filter: blur(12px);
+    }
+    [data-theme="light"] .logout-kpi-modal,
+    html:not([data-theme="dark"]) .logout-kpi-modal {
+      background-color: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      background-image: radial-gradient(circle at 85% 15%, rgba(239, 68, 68, 0.08) 0%, transparent 60%) !important;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12) !important;
+    }
+    .logout-modal-accent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #EF4444 0%, #F87171 60%, transparent 100%);
+      box-shadow: 0 1px 6px rgba(239, 68, 68, 0.4);
+      z-index: 2;
+    }
+    .logout-icon-badge {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: rgba(239, 68, 68, 0.14);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+    }
   </style>
   
   <!-- Early Theme Script to prevent flash -->
@@ -88,20 +317,150 @@
 <body>
 
   {% if user.is_authenticated %}
-  <!-- Top Responsive Navigation Bar -->
-  <nav class="navbar navbar-expand-lg navbar-custom">
+  <!-- ═══════════════════════════════════════════════════
+       MOBILE SIDEBAR OVERLAY + DRAWER
+  ═══════════════════════════════════════════════════ -->
+  <!-- Dark overlay backdrop (mobile only) -->
+  <div id="mobileSidebarOverlay" class="mobile-sidebar-overlay d-lg-none" onclick="closeMobileSidebar()"></div>
+
+  <!-- Mobile Sidebar Drawer -->
+  <aside id="mobileSidebar" class="mobile-sidebar d-lg-none" aria-label="Mobile navigation">
+    <!-- Sidebar Header -->
+    <div class="mobile-sidebar-header">
+      <a class="navbar-brand-title" href="{% url 'dashboard:index' %}" onclick="closeMobileSidebar()">
+        <img src="{% static 'img/logo.png' %}" alt="Logo" style="height:32px;width:auto;object-fit:contain;">
+        <span class="ms-2 fw-bold">Gemini Insights</span>
+      </a>
+      <button class="mobile-sidebar-close" onclick="closeMobileSidebar()" aria-label="Close menu">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- User info strip -->
+    <div class="mobile-sidebar-user">
+      <div class="d-flex align-items-center gap-2">
+        <div class="avatar-circle" style="width:38px;height:38px;">
+          <i class="bi bi-person-circle fs-4"></i>
+        </div>
+        <div>
+          <div class="fw-bold text-body lh-1">{{ user.full_name|default:user.username }}</div>
+          <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %} mt-1" style="font-size:0.72rem;">
+            {{ user.get_role_display }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav links -->
+    <nav class="mobile-sidebar-nav">
+      <p class="mobile-sidebar-section-label">Navigation</p>
+      <a class="mobile-sidebar-link {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}" onclick="closeMobileSidebar()">
+        <i class="bi bi-grid-1x2-fill"></i> Dashboard
+      </a>
+      <a class="mobile-sidebar-link {% if request.resolver_match.namespace == 'reports' and request.resolver_match.url_name == 'daily_report' %}active{% endif %}" href="{% url 'reports:daily_report' %}" onclick="closeMobileSidebar()">
+        <i class="bi bi-calendar3-range-fill"></i> Daily Report
+      </a>
+      <a class="mobile-sidebar-link {% if request.resolver_match.namespace == 'compliance' %}active{% endif %}" href="{% url 'compliance:compliance_report' %}" onclick="closeMobileSidebar()">
+        <i class="bi bi-clipboard-check-fill"></i> Compliance
+      </a>
+      <a class="mobile-sidebar-link {% if request.resolver_match.url_name == 'task_list' or request.resolver_match.url_name == 'task_create' or request.resolver_match.url_name == 'task_edit' %}active{% endif %}" href="{% url 'reports:task_list' %}" onclick="closeMobileSidebar()">
+        <i class="bi bi-list-check"></i> Tasks
+      </a>
+
+      {% if user.is_boss %}
+      <a class="mobile-sidebar-link {% if request.resolver_match.namespace == 'accounts' and 'employee' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'accounts:employee_list' %}" onclick="closeMobileSidebar()">
+        <i class="bi bi-people-fill"></i> Employee Management
+      </a>
+      {% endif %}
+
+      {% if not user.is_boss %}
+      <p class="mobile-sidebar-section-label mt-3">External Tools</p>
+      <a class="mobile-sidebar-link" href="https://geminiexcel.streamlit.app/" target="_blank" rel="noopener noreferrer" onclick="closeMobileSidebar()">
+        <i class="bi bi-bag-check-fill text-info"></i> <span class="text-info">Purchase Excel Tool</span>
+      </a>
+      <a class="mobile-sidebar-link" href="https://gemini-sales-invoice-converter.vercel.app/" target="_blank" rel="noopener noreferrer" onclick="closeMobileSidebar()">
+        <i class="bi bi-graph-up-arrow text-success"></i> <span class="text-success">Sales Invoice Converter</span>
+      </a>
+      {% endif %}
+
+      <div class="mobile-sidebar-divider"></div>
+      <p class="mobile-sidebar-section-label">Account</p>
+      <a class="mobile-sidebar-link" href="{% url 'accounts:profile' %}" onclick="closeMobileSidebar()">
+        <i class="bi bi-person-badge"></i> View Profile
+      </a>
+      <a class="mobile-sidebar-link" href="{% url 'accounts:change_password' %}" onclick="closeMobileSidebar()">
+        <i class="bi bi-key"></i> Change Password
+      </a>
+      <a class="mobile-sidebar-link text-danger" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal" onclick="closeMobileSidebar()">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════
+       TOP NAVIGATION BAR
+  ═══════════════════════════════════════════════════ -->
+  <nav class="navbar navbar-custom">
     <div class="container-fluid">
       <!-- Left: Logo & Brand -->
-      <a class="navbar-brand navbar-brand-title" href="{% url 'dashboard:index' %}">
+      <a class="navbar-brand navbar-brand-title d-flex align-items-center" href="{% url 'dashboard:index' %}">
         <img src="{% static 'img/logo.png' %}" alt="Logo" class="brand-logo me-2" style="height: 38px; width: auto; object-fit: contain;">
         <span>Gemini Insights</span>
       </a>
 
-      <!-- Mobile Right Controls: Notification & Dark Theme Toggle (Mobile Only) -->
-      <div class="d-flex align-items-center gap-2 d-lg-none ms-auto">
-        <!-- Mobile Notification Bell Dropdown -->
+      <!-- Center: Desktop nav links -->
+      <ul class="navbar-nav d-none d-lg-flex flex-row gap-2 align-items-center nav-buttons-group mx-auto">
+        <li class="nav-item">
+          <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
+            <i class="bi bi-grid-1x2-fill me-1"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'reports' and request.resolver_match.url_name == 'daily_report' %}active{% endif %}" href="{% url 'reports:daily_report' %}">
+            <i class="bi bi-calendar3-range-fill me-1"></i> Daily Report
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'compliance' %}active{% endif %}" href="{% url 'compliance:compliance_report' %}">
+            <i class="bi bi-clipboard-check-fill me-1"></i> Compliance
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'task_list' or request.resolver_match.url_name == 'task_create' or request.resolver_match.url_name == 'task_edit' %}active{% endif %}" href="{% url 'reports:task_list' %}">
+            <i class="bi bi-list-check me-1"></i> Tasks
+          </a>
+        </li>
+      </ul>
+
+      <!-- Right: Utilities -->
+      <div class="d-flex align-items-center gap-2">
+        <!-- Desktop tool icon buttons -->
+        <div class="d-none d-lg-flex align-items-center gap-2 nav-tools-container">
+          {% if not user.is_boss %}
+          <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none" 
+             href="https://geminiexcel.streamlit.app/" target="_blank" rel="noopener noreferrer" 
+             title="Purchase Excel Tool" id="navPurchaseTool">
+            <i class="bi bi-bag-check-fill text-info fs-5"></i>
+          </a>
+          <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none" 
+             href="https://gemini-sales-invoice-converter.vercel.app/" target="_blank" rel="noopener noreferrer" 
+             title="Sales Invoice Converter" id="navSalesTool">
+            <i class="bi bi-graph-up-arrow text-success fs-5"></i>
+          </a>
+          {% endif %}
+          {% if user.is_boss %}
+          <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none {% if request.resolver_match.namespace == 'accounts' and 'employee' in request.resolver_match.url_name %}active text-primary{% endif %}" 
+             href="{% url 'accounts:employee_list' %}" title="Employee Management" id="navEmployeeMgmt">
+            <i class="bi bi-people-fill fs-5"></i>
+          </a>
+          {% endif %}
+        </div>
+
+        <span class="nav-divider d-none d-lg-inline-block" style="width:1px;height:24px;background:var(--border-color);opacity:.6;margin:0 4px;"></span>
+
+        <!-- Mobile Notification Bell -->
         <div class="dropdown">
-          <button class="btn btn-outline-secondary btn-sm position-relative border-0 p-2" type="button" id="mobileNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+          <button class="nav-notif-btn position-relative" type="button" id="mobileNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
             <i class="bi bi-bell-fill fs-5 text-secondary"></i>
             {% if unread_notifications_count > 0 %}
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
@@ -110,7 +469,7 @@
             </span>
             {% endif %}
           </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 notification-dropdown-menu" aria-labelledby="mobileNotifDropdown" style="width: 320px; max-width: 90vw; max-height: 420px; overflow-y: auto;">
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 notification-dropdown-menu" aria-labelledby="mobileNotifDropdown" style="width: 320px; max-width: 92vw; max-height: 420px; overflow-y: auto;">
             <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
               <span class="fw-bold fs-6"><i class="bi bi-bell me-1 text-primary"></i> Notifications</span>
               {% if unread_notifications_count > 0 %}
@@ -151,201 +510,44 @@
             </li>
             {% endfor %}
             <li class="p-2 text-center bg-body-tertiary">
-              <a href="{% url 'reports:task_list' %}" class="small text-decoration-none fw-bold text-primary">Go to Tasks Tab <i class="bi bi-arrow-right"></i></a>
+              <a href="{% url 'reports:task_list' %}" class="small text-decoration-none fw-bold text-primary">Go to Tasks <i class="bi bi-arrow-right"></i></a>
             </li>
           </ul>
         </div>
 
-        <button class="theme-toggle-btn" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
-          <i id="theme-toggle-icon-mobile" class="bi bi-moon-stars-fill"></i>
+        <!-- Theme toggle (single button for both mobile and desktop) -->
+        <button id="theme-toggle" class="theme-toggle-btn" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
+          <i id="theme-toggle-icon" class="bi bi-moon-stars-fill"></i>
         </button>
-        <button class="navbar-toggler border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+
+        <!-- 3-line Hamburger Menu Button on the RIGHT for mobile -->
+        <button class="mobile-hamburger d-lg-none" onclick="openMobileSidebar()" aria-label="Open navigation menu" title="Menu">
           <span class="navbar-toggler-icon"></span>
         </button>
-      </div>
 
-      <!-- Navbar Links -->
-      <div class="collapse navbar-collapse" id="navbarMain">
-        <!-- Main Navigation Links (Dashboard, Daily Report, Compliance, Tasks, Sales, Purchase) -->
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-2 align-items-lg-center nav-buttons-group">
-          <!-- Main nav links -->
-          <li class="nav-item">
-            <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
-              <i class="bi bi-grid-1x2-fill me-1"></i> Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'reports' and request.resolver_match.url_name == 'daily_report' %}active{% endif %}" href="{% url 'reports:daily_report' %}">
-              <i class="bi bi-calendar3-range-fill me-1"></i> Daily Report
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'compliance' %}active{% endif %}" href="{% url 'compliance:compliance_report' %}">
-              <i class="bi bi-clipboard-check-fill me-1"></i> Compliance
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'task_list' or request.resolver_match.url_name == 'task_create' or request.resolver_match.url_name == 'task_edit' %}active{% endif %}" href="{% url 'reports:task_list' %}">
-              <i class="bi bi-list-check me-1"></i> Tasks
-            </a>
-          </li>
-
-          <!-- Mobile Only external tool links -->
-          <li class="nav-item d-lg-none mt-2 pt-2 border-top">
-            <a class="nav-link nav-link-custom text-info" href="https://geminiexcel.streamlit.app/" target="_blank" rel="noopener noreferrer">
-              <i class="bi bi-bag-check-fill me-2"></i> Purchase Excel Tool
-            </a>
-          </li>
-          <li class="nav-item d-lg-none">
-            <a class="nav-link nav-link-custom text-success" href="https://gemini-sales-invoice-converter.vercel.app/" target="_blank" rel="noopener noreferrer">
-              <i class="bi bi-graph-up-arrow me-2"></i> Sales Invoice Converter
-            </a>
-          </li>
-          {% if user.is_boss %}
-          <li class="nav-item d-lg-none">
-            <a class="nav-link nav-link-custom {% if request.resolver_match.namespace == 'accounts' and 'employee' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'accounts:employee_list' %}">
-              <i class="bi bi-people-fill me-2"></i> Employee Management
-            </a>
-          </li>
-          {% endif %}
-        </ul>
-
-        <!-- Right Side Nav Utilities (Purchase, Sales, Employee Mgmt, Notifications, Theme toggle & Profile) -->
-        <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3 nav-utilities-group">
-          <!-- Tools Group with dedicated padding and gap (Desktop) -->
-          <div class="d-none d-lg-flex align-items-center gap-2 gap-xl-3 px-2 py-1 nav-tools-container">
-            <!-- Purchase Tool Link (Desktop) -->
-            <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none" 
-               href="https://geminiexcel.streamlit.app/" 
-               target="_blank" 
-               rel="noopener noreferrer" 
-               title="Purchase Excel Tool" 
-               id="navPurchaseTool">
-              <i class="bi bi-bag-check-fill text-info fs-5"></i>
-            </a>
-
-            <!-- Sales Invoice Converter Tool Link (Desktop) -->
-            <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none" 
-               href="https://gemini-sales-invoice-converter.vercel.app/" 
-               target="_blank" 
-               rel="noopener noreferrer" 
-               title="Sales Invoice Converter Tool" 
-               id="navSalesTool">
-              <i class="bi bi-graph-up-arrow text-success fs-5"></i>
-            </a>
-
-            <!-- Employee Management Link (Desktop, Boss Only) -->
-            {% if user.is_boss %}
-            <a class="nav-icon-btn align-items-center justify-content-center text-decoration-none {% if request.resolver_match.namespace == 'accounts' and 'employee' in request.resolver_match.url_name %}active text-primary{% endif %}" 
-               href="{% url 'accounts:employee_list' %}" 
-               title="Employee Management" 
-               id="navEmployeeMgmt">
-              <i class="bi bi-people-fill fs-5"></i>
-            </a>
-            {% endif %}
-          </div>
-
-          <span class="nav-divider d-none d-lg-inline-block" style="width:1px;height:24px;background:var(--border-color);opacity:.6;display:inline-block;vertical-align:middle;margin:0 4px;"></span>
-
-          <!-- Desktop Notifications Dropdown -->
-          <div class="dropdown d-none d-lg-block">
-            <button class="btn btn-outline-secondary btn-sm position-relative border-0 p-2" type="button" id="desktopNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
-              <i class="bi bi-bell-fill fs-5"></i>
-              {% if unread_notifications_count > 0 %}
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.65rem;">
-                {{ unread_notifications_count }}
-                <span class="visually-hidden">unread notifications</span>
+        <!-- Desktop user profile dropdown -->
+        <div class="dropdown d-none d-lg-block">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2 border-0" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="avatar-circle">
+              <i class="bi bi-person-circle fs-5"></i>
+            </div>
+            <div class="text-start">
+              <div class="fw-bold fs-7 lh-1">{{ user.full_name|default:user.username }}</div>
+              <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %} mt-1">
+                {{ user.get_role_display }}
               </span>
-              {% endif %}
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 notification-dropdown-menu" aria-labelledby="desktopNotifDropdown" style="width: 360px; max-height: 460px; overflow-y: auto;">
-              <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
-                <span class="fw-bold fs-6"><i class="bi bi-bell-fill me-1 text-primary"></i> Notifications</span>
-                {% if unread_notifications_count > 0 %}
-                <a href="{% url 'reports:notification_mark_all_read' %}" class="small text-decoration-none fw-semibold text-primary">Mark all read</a>
-                {% endif %}
-              </li>
-
-              {% for n in recent_notifications %}
-              <li class="border-bottom">
-                <a href="{% if not n.is_read %}{% url 'reports:notification_mark_read' n.id %}{% elif n.related_task %}{% url 'reports:task_list' %}{% else %}#{% endif %}" class="dropdown-item p-3 text-wrap {% if not n.is_read %}bg-primary bg-opacity-10 fw-semibold{% endif %}">
-                  <div class="d-flex align-items-start gap-2">
-                    <div class="mt-1">
-                      {% if n.notification_type == 'TASK_REALLOCATED' %}
-                        <span class="badge rounded-circle bg-warning text-dark p-2"><i class="bi bi-arrow-left-right"></i></span>
-                      {% elif n.notification_type == 'TASK_COMPLETED_WAITING_APPROVAL' %}
-                        <span class="badge rounded-circle bg-info text-white p-2"><i class="bi bi-hourglass-split"></i></span>
-                      {% elif n.notification_type == 'TASK_APPROVED' %}
-                        <span class="badge rounded-circle bg-success text-white p-2"><i class="bi bi-check-circle-fill"></i></span>
-                      {% elif n.notification_type == 'TASK_REVISION_REQUESTED' %}
-                        <span class="badge rounded-circle bg-danger text-white p-2"><i class="bi bi-exclamation-octagon-fill"></i></span>
-                      {% else %}
-                        <span class="badge rounded-circle bg-primary text-white p-2"><i class="bi bi-info-circle-fill"></i></span>
-                      {% endif %}
-                    </div>
-                    <div class="flex-grow-1">
-                      <div class="d-flex justify-content-between">
-                        <span class="small fw-bold text-body">{{ n.title }}</span>
-                        <span class="badge text-muted p-0" style="font-size: 0.7rem;">{{ n.created_at|timesince }} ago</span>
-                      </div>
-                      <p class="small text-muted mb-0 mt-1">{{ n.message }}</p>
-                    </div>
-                  </div>
-                </a>
-              </li>
-              {% empty %}
-              <li class="p-4 text-center text-muted">
-                <i class="bi bi-bell-slash fs-2 d-block mb-1 opacity-50"></i>
-                <span class="small">No notifications yet</span>
-              </li>
-              {% endfor %}
-              <li class="p-2 text-center bg-body-tertiary">
-                <a href="{% url 'reports:task_list' %}" class="small text-decoration-none fw-bold text-primary">Go to Tasks Tab <i class="bi bi-arrow-right"></i></a>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Desktop Theme Toggle Switch -->
-          <button id="theme-toggle" class="theme-toggle-btn d-none d-lg-inline-flex" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
-            <i id="theme-toggle-icon" class="bi bi-moon-stars-fill"></i>
+            </div>
           </button>
-
-          <!-- User Profile & Dropdown -->
-          <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2 border-0" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="avatar-circle">
-                <i class="bi bi-person-circle fs-5"></i>
-              </div>
-              <div class="text-start">
-                <div class="fw-bold fs-7 lh-1">{{ user.full_name|default:user.username }}</div>
-                <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %} mt-1">
-                  {{ user.get_role_display }}
-                </span>
-              </div>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userMenu">
-              <li class="px-3 py-2 border-bottom">
-                <div class="fw-bold">{{ user.full_name|default:user.username }}</div>
-                <div class="text-muted small">{{ user.email }}</div>
-              </li>
-              <li>
-                <a class="dropdown-item py-2" href="{% url 'accounts:profile' %}">
-                  <i class="bi bi-person-badge me-2"></i> View Profile
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item py-2" href="{% url 'accounts:change_password' %}">
-                  <i class="bi bi-key me-2"></i> Change Password
-                </a>
-              </li>
-              <li><hr class="dropdown-divider"></li>
-              <li>
-                <a class="dropdown-item py-2 text-danger" href="{% url 'accounts:logout' %}">
-                  <i class="bi bi-box-arrow-right me-2"></i> Logout
-                </a>
-              </li>
-            </ul>
-          </div>
+          <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userMenu">
+            <li class="px-3 py-2 border-bottom">
+              <div class="fw-bold">{{ user.full_name|default:user.username }}</div>
+              <div class="text-muted small">{{ user.email }}</div>
+            </li>
+            <li><a class="dropdown-item py-2" href="{% url 'accounts:profile' %}"><i class="bi bi-person-badge me-2"></i> View Profile</a></li>
+            <li><a class="dropdown-item py-2" href="{% url 'accounts:change_password' %}"><i class="bi bi-key me-2"></i> Change Password</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item py-2 text-danger" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+          </ul>
         </div>
       </div>
     </div>
@@ -353,7 +555,7 @@
   {% endif %}
 
   <!-- Main Content Container -->
-  <main class="container-fluid py-4 px-md-4">
+  <main class="container-fluid pt-2 pt-md-4 pb-4 px-2 px-md-4">
     <!-- Django Flash Messages -->
     {% if messages %}
     <div class="row justify-content-center">
@@ -389,6 +591,24 @@
 
   <!-- Bootstrap 5 JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Mobile Sidebar JS -->
+  <script>
+    function openMobileSidebar() {
+      document.getElementById('mobileSidebar').classList.add('open');
+      document.getElementById('mobileSidebarOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeMobileSidebar() {
+      document.getElementById('mobileSidebar').classList.remove('open');
+      document.getElementById('mobileSidebarOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    // Close sidebar on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeMobileSidebar();
+    });
+  </script>
 
   <!-- Render Free Tier 10-min Keep-Alive Self-Ping Script -->
   <script>
@@ -1577,6 +1797,34 @@
       };
     })();
   </script>
+  {% endif %}
+
+  {% if user.is_authenticated %}
+  <!-- Logout Confirmation Modal (KPI Card Style) -->
+  <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+      <div class="modal-content logout-kpi-modal border-0">
+        <div class="logout-modal-accent"></div>
+        <div class="modal-body p-4 text-center">
+          <div class="logout-icon-badge mb-3">
+            <i class="bi bi-box-arrow-right"></i>
+          </div>
+          <h4 class="fw-bold mb-2" id="logoutConfirmModalLabel">Confirm Logout</h4>
+          <p class="text-muted small mb-4">
+            Are you sure you want to log out of your session? Any unsaved changes may be lost.
+          </p>
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-secondary px-3 py-2 fw-semibold rounded-3 flex-grow-1" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <a href="{% url 'accounts:logout' %}" class="btn btn-danger px-3 py-2 fw-bold rounded-3 shadow-sm flex-grow-1 d-inline-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   {% endif %}
 
   {% block extra_js %}{% endblock %}

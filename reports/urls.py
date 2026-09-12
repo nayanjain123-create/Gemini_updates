@@ -18,6 +18,7 @@ urlpatterns = [
     path('tasks/<int:task_id>/approve/', views.task_approve_view, name='task_approve'),
     path('tasks/<int:task_id>/remark/', views.task_remark_view, name='task_remark'),
     path('tasks/<int:task_id>/edit/', views.task_edit_view, name='task_edit'),
+    path('tasks/<int:task_id>/delete/', views.task_delete_view, name='task_delete'),
 
     # Notifications
     path('notifications/<int:notification_id>/read/', views.notification_mark_read_view, name='notification_mark_read'),

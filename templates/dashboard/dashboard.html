@@ -4,71 +4,370 @@
 
 {% block extra_css %}
 <style>
-  .chart-canvas-wrap { position: relative; height: 280px; }
-  .chart-canvas-wrap-lg { position: relative; height: 320px; }
-  .kpi-icon { font-size: 2rem; opacity: 0.85; }
-  .kpi-card-awaiting { border-left: 4px solid #6f42c1 !important; }
-  .kpi-card-awaiting.has-items { background: rgba(111,66,193,0.07) !important; }
-  .badge-num { font-size:0.83rem; min-width:30px; display:inline-block; text-align:center; }
-  .chart-tab-btn { background:none; border:1px solid #dee2e6; border-radius:6px; padding:4px 14px; font-size:0.82rem; font-weight:600; color:#6c757d; cursor:pointer; transition:all .2s; }
-  .chart-tab-btn.active { background:#0d6efd; border-color:#0d6efd; color:#fff; }
-  .feed-item { border-left: 3px solid #F59E0B; }
+  .chart-canvas-wrap {
+    position: relative;
+    height: 280px;
+  }
+
+  .chart-canvas-wrap-lg {
+    position: relative;
+    height: 320px;
+  }
+
+  /* Premium KPI Cards Styling */
+  .kpi-card-modern {
+    background: var(--bg-card, #1E293B) !important;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: 16px !important;
+    padding: 1rem 0.95rem 0.85rem !important;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14) !important;
+    backdrop-filter: blur(10px);
+  }
+  .kpi-card-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22) !important;
+  }
+
+  /* Elegant Top Accent Bar */
+  .kpi-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 2;
+  }
+  .kpi-card-modern.accent-success::before {
+    background: linear-gradient(90deg, #22C55E 0%, #10B981 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(34, 197, 94, 0.4);
+  }
+  .kpi-card-modern.accent-purple::before {
+    background: linear-gradient(90deg, #A855F7 0%, #6366F1 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(168, 85, 247, 0.4);
+  }
+  .kpi-card-modern.accent-primary::before {
+    background: linear-gradient(90deg, #3B82F6 0%, #06B6D4 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(59, 130, 246, 0.4);
+  }
+  .kpi-card-modern.accent-info::before {
+    background: linear-gradient(90deg, #0EA5E9 0%, #2DD4BF 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(14, 165, 233, 0.4);
+  }
+  .kpi-card-modern.accent-danger::before {
+    background: linear-gradient(90deg, #EF4444 0%, #F87171 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(239, 68, 68, 0.4);
+  }
+
+  /* Ambient Radial Glow on Cards (Dark Mode) */
+  .kpi-card-modern.accent-success {
+    background-image: radial-gradient(circle at 85% 15%, rgba(34, 197, 94, 0.12) 0%, transparent 60%),
+                      linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+  }
+  .kpi-card-modern.accent-purple {
+    background-image: radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.14) 0%, transparent 60%),
+                      linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+  }
+  .kpi-card-modern.accent-primary {
+    background-image: radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 60%),
+                      linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+  }
+  .kpi-card-modern.accent-info {
+    background-image: radial-gradient(circle at 85% 15%, rgba(14, 165, 233, 0.12) 0%, transparent 60%),
+                      linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+  }
+  .kpi-card-modern.accent-danger {
+    background-image: radial-gradient(circle at 85% 15%, rgba(239, 68, 68, 0.12) 0%, transparent 60%),
+                      linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+  }
+
+  /* Light mode overrides */
+  [data-theme="light"] .kpi-card-modern,
+  html:not([data-theme="dark"]) .kpi-card-modern {
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+  }
+  [data-theme="light"] .kpi-card-modern.accent-success {
+    background-image: radial-gradient(circle at 85% 15%, rgba(34, 197, 94, 0.08) 0%, transparent 60%) !important;
+  }
+  [data-theme="light"] .kpi-card-modern.accent-purple {
+    background-image: radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.08) 0%, transparent 60%) !important;
+  }
+  [data-theme="light"] .kpi-card-modern.accent-primary {
+    background-image: radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.08) 0%, transparent 60%) !important;
+  }
+  [data-theme="light"] .kpi-card-modern.accent-info {
+    background-image: radial-gradient(circle at 85% 15%, rgba(14, 165, 233, 0.08) 0%, transparent 60%) !important;
+  }
+
+  /* KPI Icon Badges */
+  .kpi-badge-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    transition: transform 0.18s ease;
+  }
+  .kpi-badge-icon.badge-success-subtle {
+    background: rgba(34, 197, 94, 0.14);
+    border: 1px solid rgba(34, 197, 94, 0.28);
+    color: #22C55E;
+  }
+  .kpi-badge-icon.badge-purple-subtle {
+    background: rgba(168, 85, 247, 0.14);
+    border: 1px solid rgba(168, 85, 247, 0.28);
+    color: #C084FC;
+  }
+  .kpi-badge-icon.badge-primary-subtle {
+    background: rgba(59, 130, 246, 0.14);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    color: #60A5FA;
+  }
+  .kpi-badge-icon.badge-info-subtle {
+    background: rgba(14, 165, 233, 0.14);
+    border: 1px solid rgba(14, 165, 233, 0.28);
+    color: #38BDF8;
+  }
+  .kpi-badge-icon.badge-danger-subtle {
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    color: #EF4444;
+  }
+
+  .kpi-label {
+    font-size: 0.70rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted, #94A3B8);
+    line-height: 1.2;
+    margin-bottom: 0;
+  }
+
+  .kpi-number {
+    font-size: 1.65rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0.35rem 0 0.25rem;
+    letter-spacing: -0.02em;
+  }
+
+  /* Micro status pills */
+  .kpi-mini-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+  .kpi-pill-danger {
+    background: rgba(239, 68, 68, 0.14);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.28);
+  }
+  .kpi-pill-success {
+    background: rgba(34, 197, 94, 0.14);
+    color: #4ADE80;
+    border: 1px solid rgba(34, 197, 94, 0.28);
+  }
+  .kpi-pill-warning {
+    background: rgba(245, 158, 11, 0.14);
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.28);
+  }
+  .kpi-pill-info {
+    background: rgba(59, 130, 246, 0.14);
+    color: #60A5FA;
+    border: 1px solid rgba(59, 130, 246, 0.28);
+  }
+  .kpi-pill-cyan {
+    background: rgba(14, 165, 233, 0.14);
+    color: #38BDF8;
+    border: 1px solid rgba(14, 165, 233, 0.28);
+  }
+  .kpi-pill-purple {
+    background: rgba(168, 85, 247, 0.14);
+    color: #C084FC;
+    border: 1px solid rgba(168, 85, 247, 0.28);
+  }
+
+  .kpi-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    padding: 3px 8px;
+    border-radius: 7px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-decoration: none !important;
+    border: none;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .kpi-btn-purple {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(139, 92, 246, 0.15) 100%);
+    color: #D8B4FE !important;
+    border: 1px solid rgba(168, 85, 247, 0.38);
+  }
+  .kpi-btn-purple:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.34) 0%, rgba(139, 92, 246, 0.24) 100%);
+    color: #FFFFFF !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(168, 85, 247, 0.25);
+  }
+  .kpi-btn-success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.22) 0%, rgba(16, 185, 129, 0.15) 100%);
+    color: #4ADE80 !important;
+    border: 1px solid rgba(34, 197, 94, 0.38);
+  }
+  .kpi-btn-success:hover {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.34) 0%, rgba(16, 185, 129, 0.24) 100%);
+    color: #FFFFFF !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.25);
+  }
+  .kpi-btn-primary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.22) 0%, rgba(37, 99, 235, 0.15) 100%);
+    color: #60A5FA !important;
+    border: 1px solid rgba(59, 130, 246, 0.38);
+  }
+  .kpi-btn-primary:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.34) 0%, rgba(37, 99, 235, 0.24) 100%);
+    color: #FFFFFF !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.25);
+  }
+
+  @media (max-width: 575.98px) {
+    .kpi-card-modern {
+      padding: 0.75rem 0.7rem 0.65rem !important;
+      border-radius: 14px !important;
+      min-height: 122px;
+    }
+    .kpi-badge-icon {
+      width: 30px;
+      height: 30px;
+      font-size: 0.95rem;
+      border-radius: 8px;
+    }
+    .kpi-label {
+      font-size: 0.64rem;
+      letter-spacing: 0.04em;
+    }
+    .kpi-number {
+      font-size: 1.45rem;
+      margin: 0.25rem 0 0.15rem;
+    }
+    .kpi-mini-pill {
+      font-size: 0.62rem;
+      padding: 1px 5px;
+      gap: 3px;
+    }
+    .kpi-action-btn {
+      font-size: 0.68rem;
+      padding: 2px 6px;
+    }
+  }
+
+  .badge-num {
+    font-size: 0.83rem;
+    min-width: 30px;
+    display: inline-block;
+    text-align: center;
+  }
+
+  .chart-tab-btn {
+    background: none;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 4px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .chart-tab-btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+  }
+
+  .feed-item {
+    border-left: 3px solid #F59E0B;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid my-3">
-  
+<div class="container-fluid mt-1 mt-md-3 mb-3">
+
   <!-- Header Banner -->
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-    <div>
-      <div class="d-flex align-items-center gap-2">
-        <h2 class="fw-bold mb-0">Welcome, {{ user.full_name|default:user.username }}!</h2>
-        <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %} fs-6">
-          {{ user.get_role_display }}
-        </span>
-      </div>
-      <p class="text-muted mb-0 mt-1">
-        {% if user.is_boss %}
-        Executive Operations Command Center &bull; {{ today|date:"l, F d, Y" }}
-        {% else %}
-        Employee Workspace &bull; {{ today|date:"l, F d, Y" }}
-        {% endif %}
+  <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 gap-2 flex-wrap">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <h2 class="fw-bold mb-0 fs-4 fs-md-2">Welcome, {{ user.full_name|default:user.username }}!</h2>
+      <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %}">
+        {{ user.get_role_display }}
+      </span>
+      {% if not user.is_boss %}
+      <p class="text-muted mb-0 d-none d-lg-inline ms-2">
+        &bull; Employee Workspace &bull; {{ today|date:"l, F d, Y" }}
       </p>
+      {% endif %}
     </div>
 
-    <div class="d-flex flex-wrap align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 ms-auto">
       {% if user.is_boss %}
-      <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#assignTaskModalDashboard">
-        <i class="bi bi-plus-circle me-1"></i> Allocate Task
+      <button class="btn btn-primary fw-bold shadow-sm d-flex align-items-center gap-2 btn-sm px-2 px-sm-3 py-1 py-sm-2" data-bs-toggle="modal"
+        data-bs-target="#assignTaskModalDashboard">
+        <i class="bi bi-plus-circle me-1"></i>
+        <span class="d-none d-sm-inline">Allocate Task</span>
+        <span class="d-inline d-sm-none">Task</span>
       </button>
       {% elif urgent_statutory_deadlines %}
-        {% for deadline in urgent_statutory_deadlines %}
-        <div class="card border-0 shadow-sm px-3 py-2 tax-countdown-card tax-countdown-{{ deadline.color_phase }}" 
-             id="taxCountdownCard_{{ deadline.short_name|slugify }}"
-             data-target="{{ deadline.target_iso }}"
-             style="min-width: 270px; max-width: 420px; outline: 2pt solid #EF4444 !important;">
-          <div class="d-flex align-items-center justify-content-between gap-3">
-            <div>
-              <div class="d-flex align-items-center gap-2">
-                <span class="fw-bold text-body" style="font-size: 0.95rem;">{{ deadline.short_name }}</span>
-                <span class="badge bg-secondary-subtle text-secondary border small" style="font-size: 0.7rem;">Due: {{ deadline.due_date|date:"M d, Y" }}</span>
-              </div>
-              <div class="text-muted small text-truncate mt-1" style="max-width: 210px; font-size: 0.75rem;" title="{{ deadline.pending_companies|join:', ' }}">
-                <i class="bi bi-building me-1 text-primary"></i>{{ deadline.pending_companies|join:", " }}
-              </div>
+      {% for deadline in urgent_statutory_deadlines %}
+      <div class="card border-0 shadow-sm px-3 py-2 tax-countdown-card tax-countdown-{{ deadline.color_phase }}"
+        id="taxCountdownCard_{{ deadline.short_name|slugify }}" data-target="{{ deadline.target_iso }}"
+        style="min-width: 270px; max-width: 420px; outline: 2pt solid #EF4444 !important;">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-body" style="font-size: 0.95rem;">{{ deadline.short_name }}</span>
+              <span class="badge bg-secondary-subtle text-secondary border small" style="font-size: 0.7rem;">Due: {{ deadline.due_date|date:"M d, Y" }}</span>
             </div>
-            <div class="text-end">
-              <div class="countdown-clock fw-bold" id="cntTime_{{ deadline.short_name|slugify }}" style="font-family: 'SFMono-Regular', Consolas, monospace; font-size: 1.15rem; letter-spacing: 0.5px;">
-                --:--:--
-              </div>
-              <span class="badge phase-badge mt-1" id="badgePhase_{{ deadline.short_name|slugify }}" style="font-size: 0.68rem;">
-                {{ deadline.phase_label }}
-              </span>
+            <div class="text-muted small text-truncate mt-1" style="max-width: 210px; font-size: 0.75rem;"
+              title="{{ deadline.pending_companies|join:', ' }}">
+              <i class="bi bi-building me-1 text-primary"></i>{{ deadline.pending_companies|join:", " }}
             </div>
           </div>
+          <div class="text-end">
+            <div class="countdown-clock fw-bold" id="cntTime_{{ deadline.short_name|slugify }}"
+              style="font-family: 'SFMono-Regular', Consolas, monospace; font-size: 1.15rem; letter-spacing: 0.5px;">
+              --:--:--
+            </div>
+            <span class="badge phase-badge mt-1" id="badgePhase_{{ deadline.short_name|slugify }}"
+              style="font-size: 0.68rem;">
+              {{ deadline.phase_label }}
+            </span>
+          </div>
         </div>
-        {% endfor %}
+      </div>
+      {% endfor %}
       {% endif %}
     </div>
   </div>
@@ -79,68 +378,110 @@
   <!-- ======================================================== -->
 
   <!-- Top KPI Cards -->
-  <div class="row g-3 mb-4">
+  <div class="row g-2 g-sm-3 mb-3 mb-md-4">
     <!-- Card 1: Daily Reports -->
     <div class="col-6 col-md-3">
-      <div class="card card-stat border-0 shadow-sm border-start border-4 border-success h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="card-stat-title">Reports Today</div>
-          <i class="bi bi-file-earmark-check-fill kpi-icon text-success"></i>
+      <div class="card kpi-card-modern accent-success h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+            <span class="kpi-label">Reports Today</span>
+            <div class="kpi-badge-icon badge-success-subtle">
+              <i class="bi bi-file-earmark-check-fill"></i>
+            </div>
+          </div>
+          <div class="kpi-number text-success">
+            {{ submitted_today_count }}<span class="fs-6 text-muted fw-normal">/{{ total_active_employees }}</span>
+          </div>
         </div>
-        <div class="card-stat-value text-success">{{ submitted_today_count }}<span class="fs-6 text-muted fw-normal"> / {{ total_active_employees }}</span></div>
-        <div class="progress my-2" style="height:5px;">
-          <div class="progress-bar bg-success" style="width:{{ submission_rate_today }}%;"></div>
-        </div>
-        <div class="d-flex justify-content-between small text-muted">
-          <span>{{ submission_rate_today }}% submitted</span>
-          <span class="{% if pending_today_count > 0 %}text-danger fw-semibold{% endif %}">{{ pending_today_count }} pending</span>
+        <div>
+          <div class="progress my-2" style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 99px;">
+            <div class="progress-bar bg-success" style="width: {{ submission_rate_today }}%; border-radius: 99px; background: linear-gradient(90deg, #22C55E, #4ADE80) !important;"></div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" style="font-size: 0.70rem; font-weight: 500;">{{ submission_rate_today }}% done</span>
+            {% if pending_today_count > 0 %}
+            <span class="kpi-mini-pill kpi-pill-danger">
+              <i class="bi bi-clock"></i> {{ pending_today_count }} pending
+            </span>
+            {% else %}
+            <span class="kpi-mini-pill kpi-pill-success">
+              <i class="bi bi-check2"></i> All in
+            </span>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Card 2: Awaiting Approval (subtle border only, no full purple bg) -->
+    <!-- Card 2: Awaiting Approval -->
     <div class="col-6 col-md-3">
-      <div class="card card-stat border-0 shadow-sm kpi-card-awaiting h-100 {% if waiting_approval_count > 0 %}has-items{% endif %}">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="card-stat-title">Awaiting Approval</div>
-          <i class="bi bi-hourglass-split kpi-icon text-purple"></i>
+      <div class="card kpi-card-modern accent-purple h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+            <span class="kpi-label">Awaiting Review</span>
+            <div class="kpi-badge-icon badge-purple-subtle">
+              <i class="bi bi-hourglass-split"></i>
+            </div>
+          </div>
+          <div class="kpi-number" style="color: #C084FC;">{{ waiting_approval_count }}</div>
         </div>
-        <div class="card-stat-value text-purple">{{ waiting_approval_count }}</div>
-        <div class="small mt-2 {% if waiting_approval_count > 0 %}text-purple fw-bold{% else %}text-muted{% endif %}">
+        <div>
           {% if waiting_approval_count > 0 %}
-            <i class="bi bi-bell-fill me-1"></i> Tasks need review &rarr; <a href="{% url 'reports:task_list' %}?status=WAITING_APPROVAL" class="fw-bold" style="color:inherit;">Tasks Tab</a>
+          <a href="{% url 'reports:task_list' %}?status=WAITING_APPROVAL" class="kpi-action-btn kpi-btn-purple">
+            <i class="bi bi-bell-fill me-1" style="font-size: 0.65rem;"></i> Review Tasks &rarr;
+          </a>
           {% else %}
-            <i class="bi bi-check-circle me-1"></i> All reviews complete
+          <div class="kpi-mini-pill kpi-pill-success w-100 justify-content-center py-1">
+            <i class="bi bi-check2-circle me-1"></i> All reviews done
+          </div>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Card 3: Active Tasks -->
+    <!-- Card 3: Allocated Tasks -->
     <div class="col-6 col-md-3">
-      <div class="card card-stat border-0 shadow-sm border-start border-4 border-primary h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="card-stat-title">Active Tasks</div>
-          <i class="bi bi-kanban-fill kpi-icon text-primary"></i>
+      <div class="card kpi-card-modern accent-primary h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+            <span class="kpi-label">Allocated Tasks</span>
+            <div class="kpi-badge-icon badge-primary-subtle">
+              <i class="bi bi-kanban-fill"></i>
+            </div>
+          </div>
+          <div class="kpi-number text-primary">{{ total_tasks_count }}</div>
         </div>
-        <div class="card-stat-value text-primary">{{ pending_tasks_count|add:inprogress_tasks_count }}</div>
-        <div class="d-flex justify-content-between small text-muted mt-2">
-          <span><i class="bi bi-clock-history me-1 text-warning"></i>{{ pending_tasks_count }} Pending</span>
-          <span><i class="bi bi-play-circle me-1 text-info"></i>{{ inprogress_tasks_count }} Running</span>
+        <div>
+          <div class="d-flex justify-content-between align-items-center gap-1">
+            <span class="kpi-mini-pill kpi-pill-success" title="Completed tasks">
+              <i class="bi bi-check-circle-fill"></i> {{ approved_tasks_count }} Done
+            </span>
+            <span class="kpi-mini-pill kpi-pill-warning" title="Pending tasks">
+              <i class="bi bi-clock-history"></i> {{ pending_tasks_count }} Pending
+            </span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Card 4: Approved / Delegated -->
     <div class="col-6 col-md-3">
-      <div class="card card-stat border-0 shadow-sm border-start border-4 border-info h-100">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="card-stat-title">Approved / Delegated</div>
-          <i class="bi bi-arrow-left-right kpi-icon text-info"></i>
+      <div class="card kpi-card-modern accent-info h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+            <span class="kpi-label">Approved Tasks</span>
+            <div class="kpi-badge-icon badge-info-subtle">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+          </div>
+          <div class="kpi-number text-info">{{ approved_tasks_count }}</div>
         </div>
-        <div class="card-stat-value text-info">{{ approved_tasks_count }} <span class="fs-6 text-muted fw-normal">approved</span></div>
-        <div class="small text-muted mt-2">
-          <i class="bi bi-diagram-3-fill me-1 text-secondary"></i>{{ reallocated_tasks_count }} delegated between staff
+        <div>
+          <div class="d-flex align-items-center">
+            <span class="kpi-mini-pill kpi-pill-cyan" title="Delegated between staff">
+              <i class="bi bi-arrow-left-right"></i> {{ reallocated_tasks_count }} Delegated
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -150,23 +491,29 @@
   <div class="row g-4 mb-4">
     <!-- Task Status Donut -->
     <div class="col-12 col-lg-4">
-      <div class="card card-stat border-0 shadow-sm h-100">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="card card-stat border-0 shadow-sm h-100 d-flex flex-column justify-content-between">
+        <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Task Status Breakdown</h6>
         </div>
-        <div class="chart-canvas-wrap">
+        <div class="chart-canvas-wrap flex-grow-1" style="min-height: 250px; position: relative;">
           <canvas id="taskStatusPieChart"></canvas>
+        </div>
+        <div class="small text-muted text-center mt-2">
+          <span>{{ pending_tasks_count }} pending</span> &bull;
+          <span>{{ waiting_approval_count }} awaiting</span> &bull;
+          <span>{{ approved_tasks_count }} approved</span>
         </div>
       </div>
     </div>
 
     <!-- Compliance Donut -->
     <div class="col-12 col-lg-4">
-      <div class="card card-stat border-0 shadow-sm h-100">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold mb-0"><i class="bi bi-clipboard-check-fill text-success me-2"></i>Compliance <span class="badge bg-secondary bg-opacity-10 text-secondary small">{{ compliance_month_name }} {{ compliance_year }}</span></h6>
+      <div class="card card-stat border-0 shadow-sm h-100 d-flex flex-column justify-content-between">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold mb-0"><i class="bi bi-clipboard-check-fill text-success me-2"></i>Compliance <span
+              class="badge bg-secondary bg-opacity-10 text-secondary small">{{ compliance_month_name }} {{ compliance_year }}</span></h6>
         </div>
-        <div class="chart-canvas-wrap">
+        <div class="chart-canvas-wrap flex-grow-1" style="min-height: 250px; position: relative;">
           <canvas id="compliancePieChart"></canvas>
         </div>
         <div class="small text-muted text-center mt-2">{{ completed_compliance_count }} done &bull; {{ pending_compliance_count }} pending &bull; {{ na_compliance_count }} N/A</div>
@@ -175,17 +522,17 @@
 
     <!-- Monthly Daily Report Submission Bar -->
     <div class="col-12 col-lg-4">
-      <div class="card card-stat border-0 shadow-sm h-100">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold mb-0"><i class="bi bi-calendar3 text-warning me-2"></i>Monthly Reports <span class="badge bg-secondary bg-opacity-10 text-secondary small">{{ current_month_name }}</span></h6>
+      <div class="card card-stat border-0 shadow-sm h-100 d-flex flex-column justify-content-between">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold mb-0"><i class="bi bi-calendar3 text-warning me-2"></i>Monthly Reports <span
+              class="badge bg-secondary bg-opacity-10 text-secondary small">{{ current_month_name }}</span></h6>
         </div>
-        <div class="chart-canvas-wrap">
+        <div class="chart-canvas-wrap flex-grow-1" style="min-height: 250px; position: relative;">
           <canvas id="dailyBarChart"></canvas>
         </div>
-        <!-- Legend -->
         <div class="d-flex flex-wrap gap-3 mt-2 justify-content-center small text-muted">
-          <span><span style="display:inline-block;width:12px;height:12px;background:#22C55E;border-radius:2px;margin-right:4px;"></span>Submitted</span>
-          <span><span style="display:inline-block;width:12px;height:12px;background:#EF4444;border-radius:2px;margin-right:4px;"></span>Not Submitted</span>
+          <span><span style="display:inline-block;width:12px;height:12px;background:#22C55E;border-radius:2px;margin-right:4px;"></span>Submitted today</span>
+          <span><span style="display:inline-block;width:12px;height:12px;background:#EF4444;border-radius:2px;margin-right:4px;"></span>Not submitted today</span>
           <span><span style="display:inline-block;width:12px;height:12px;background:rgba(148,163,184,0.3);border:1px solid rgba(148,163,184,0.5);border-radius:2px;margin-right:4px;"></span>Total Days</span>
         </div>
       </div>
@@ -201,18 +548,24 @@
       <canvas id="empBarChart"></canvas>
     </div>
     <div class="d-flex flex-wrap gap-3 mt-3 justify-content-center small text-muted">
-      <span><span style="display:inline-block;width:12px;height:12px;background:#F59E0B;border-radius:2px;margin-right:4px;"></span>Pending</span>
-      <span><span style="display:inline-block;width:12px;height:12px;background:#A855F7;border-radius:2px;margin-right:4px;"></span>Awaiting Approval</span>
-      <span><span style="display:inline-block;width:12px;height:12px;background:#22C55E;border-radius:2px;margin-right:4px;"></span>Approved</span>
+      <span><span
+          style="display:inline-block;width:12px;height:12px;background:#F59E0B;border-radius:2px;margin-right:4px;"></span>Pending</span>
+      <span><span
+          style="display:inline-block;width:12px;height:12px;background:#A855F7;border-radius:2px;margin-right:4px;"></span>Awaiting
+        Approval</span>
+      <span><span
+          style="display:inline-block;width:12px;height:12px;background:#22C55E;border-radius:2px;margin-right:4px;"></span>Approved</span>
     </div>
   </div>
 
 
   <!-- Employee Workload Scoreboard (Read-only, no actions) -->
   <div class="card card-stat border-0 shadow-sm mb-4">
-    <div class="card-header bg-transparent py-3 px-3 px-md-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+    <div
+      class="card-header bg-transparent py-3 px-3 px-md-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
       <div>
-        <h5 class="fw-bold mb-0 text-body"><i class="bi bi-people-fill text-primary me-2"></i> Employee Workload & Performance Scoreboard</h5>
+        <h5 class="fw-bold mb-0 text-body"><i class="bi bi-people-fill text-primary me-2"></i> Employee Workload &
+          Performance Scoreboard</h5>
         <div class="small text-muted">Live view of report submissions and task metrics per employee.</div>
       </div>
       <a href="{% url 'reports:daily_report' %}" class="btn btn-sm btn-outline-primary">
@@ -245,37 +598,37 @@
               </td>
               <td>
                 {% if item.today_submitted %}
-                  <span class="fw-semibold small text-success">
-                    <i class="bi bi-check-circle-fill me-1"></i>Submitted
-                  </span>
+                <span class="fw-semibold small text-success">
+                  <i class="bi bi-check-circle-fill me-1"></i>Submitted
+                </span>
                 {% else %}
-                  <span class="fw-semibold small text-danger">
-                    <i class="bi bi-exclamation-octagon-fill me-1"></i>Pending
-                  </span>
+                <span class="fw-semibold small text-danger">
+                  <i class="bi bi-exclamation-octagon-fill me-1"></i>Pending
+                </span>
                 {% endif %}
               </td>
               <!-- Pending -->
               <td class="text-center">
                 {% if item.pending_tasks > 0 %}
-                  <span class="badge bg-warning text-dark px-2">{{ item.pending_tasks }}</span>
+                <span class="badge bg-warning text-dark px-2">{{ item.pending_tasks }}</span>
                 {% else %}
-                  <span class="text-muted small">0</span>
+                <span class="text-muted small">0</span>
                 {% endif %}
               </td>
               <!-- Awaiting Approval -->
               <td class="text-center">
                 {% if item.waiting_approval_tasks > 0 %}
-                  <span class="badge bg-purple text-white px-2"><i class="bi bi-hourglass-split me-1"></i>{{ item.waiting_approval_tasks }}</span>
+                <span class="badge bg-purple text-white px-2"><i class="bi bi-hourglass-split me-1"></i>{{ item.waiting_approval_tasks }}</span>
                 {% else %}
-                  <span class="text-muted small">—</span>
+                <span class="text-muted small">—</span>
                 {% endif %}
               </td>
               <!-- Delegated: icon + number only when > 0 -->
               <td class="text-center">
                 {% if item.reallocated_count > 0 %}
-                  <span class="small fw-semibold text-warning-emphasis"><i class="bi bi-arrow-left-right me-1"></i>{{ item.reallocated_count }}</span>
+                <span class="small fw-semibold text-warning-emphasis"><i class="bi bi-arrow-left-right me-1"></i>{{ item.reallocated_count }}</span>
                 {% else %}
-                  <span class="text-muted small">0</span>
+                <span class="text-muted small">0</span>
                 {% endif %}
               </td>
             </tr>
@@ -354,7 +707,8 @@
                     {{ log.user.full_name|default:log.user.username|default:"System" }}
                   </td>
                   <td><span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.7rem;">{{ log.action }}</span></td>
-                  <td class="small text-muted text-truncate" style="max-width: 180px;">{{ log.details|default:"—" }}</td>
+                  <td class="small text-muted text-truncate" style="max-width: 180px;">{{ log.details|default:"—" }}
+                  </td>
                 </tr>
                 {% empty %}
                 <tr>
@@ -374,7 +728,8 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content modal-content-custom">
         <div class="modal-header border-bottom">
-          <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i> Allocate New Task to Employee</h5>
+          <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i> Allocate New Task to
+            Employee</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form method="post" action="{% url 'reports:task_create' %}">
@@ -382,7 +737,8 @@
           <div class="modal-body p-4">
             <div class="mb-3">
               <label class="form-label fw-semibold">Task Title *</label>
-              <input type="text" name="title" class="form-control" required placeholder="e.g. Complete the returns for container 4">
+              <input type="text" name="title" class="form-control" required
+                placeholder="e.g. Complete the returns for container 4">
             </div>
 
             <div class="mb-3">
@@ -414,7 +770,8 @@
 
             <div class="mb-3">
               <label class="form-label fw-semibold">Instructions / Details</label>
-              <textarea name="description" class="form-control" rows="3" placeholder="Provide clear task instructions..."></textarea>
+              <textarea name="description" class="form-control" rows="3"
+                placeholder="Provide clear task instructions..."></textarea>
             </div>
           </div>
           <div class="modal-footer border-top">
@@ -432,66 +789,108 @@
   <!-- ======================================================== -->
 
   <!-- Top Employee KPI Cards -->
-  <div class="row g-3 mb-4">
+  <div class="row g-2 g-sm-3 mb-3 mb-md-4">
     <!-- Card 1: Today's Daily Report -->
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 {% if today_submitted %}border-success{% else %}border-danger{% endif %}">
-        <div class="card-stat-title">Today's Daily Report</div>
-        <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="col-6 col-md-3">
+      <div class="card kpi-card-modern {% if today_submitted %}accent-success{% else %}accent-danger{% endif %} h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+            <span class="kpi-label">Today's Report</span>
+            <div class="kpi-badge-icon {% if today_submitted %}badge-success-subtle{% else %}badge-danger-subtle{% endif %}">
+              <i class="bi {% if today_submitted %}bi-file-earmark-check-fill{% else %}bi-file-earmark-x-fill{% endif %}"></i>
+            </div>
+          </div>
           {% if today_submitted %}
-            <div>
-              <span class="badge badge-completed fs-6"><i class="bi bi-check-circle-fill me-1"></i> Submitted</span>
-              <div class="small text-muted mt-2">Ready for management review</div>
-            </div>
+          <div class="kpi-number text-success" style="font-size: 1.25rem;">
+            <i class="bi bi-check-circle-fill me-1"></i> Submitted
+          </div>
           {% else %}
-            <div>
-              <span class="badge badge-blocked fs-6"><i class="bi bi-exclamation-octagon-fill me-1"></i> Not Submitted</span>
-              <div class="small text-muted mt-2">Please log your work for today</div>
-            </div>
+          <div class="kpi-number text-danger" style="font-size: 1.25rem;">
+            <i class="bi bi-exclamation-circle-fill me-1"></i> Pending
+          </div>
           {% endif %}
-          <i class="bi bi-calendar-event fs-1 text-muted opacity-50"></i>
         </div>
         <div>
-          <button class="btn btn-sm btn-primary fw-bold w-100" data-bs-toggle="modal" data-bs-target="#editTodayTaskModal">
-            <i class="bi bi-pencil-square me-1"></i> {% if today_submitted %}Update Today's Report{% else %}Submit Today's Report{% endif %}
+          <button class="kpi-action-btn {% if today_submitted %}kpi-btn-success{% else %}kpi-btn-primary{% endif %}" data-bs-toggle="modal"
+            data-bs-target="#editTodayTaskModal">
+            <i class="bi bi-pencil-square me-1"></i> {% if today_submitted %}Update Report{% else %}Submit Report{% endif %}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Card 2: My Pending & In Progress Tasks -->
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 border-warning">
-        <div class="card-stat-title">Your Active Tasks</div>
-        <div class="card-stat-value text-warning">{{ my_pending_count|add:my_inprogress_count }}</div>
-        <div class="d-flex justify-content-between align-items-center small text-muted mt-2">
-          <span>{{ my_pending_count }} Pending</span>
-          <span>{{ my_inprogress_count }} In Progress</span>
+    <!-- Card 2: Allocated Tasks -->
+    <div class="col-6 col-md-3">
+      <div class="card kpi-card-modern accent-primary h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+            <span class="kpi-label">Allocated Tasks</span>
+            <div class="kpi-badge-icon badge-primary-subtle">
+              <i class="bi bi-kanban-fill"></i>
+            </div>
+          </div>
+          <div class="kpi-number text-primary">{{ my_total_tasks_count }}</div>
+        </div>
+        <div>
+          <div class="d-flex justify-content-between align-items-center gap-1">
+            <span class="kpi-mini-pill kpi-pill-success" title="Completed tasks">
+              <i class="bi bi-check-circle-fill"></i> {{ my_approved_count }} Done
+            </span>
+            <span class="kpi-mini-pill kpi-pill-warning" title="Pending tasks">
+              <i class="bi bi-clock-history"></i> {{ my_pending_count }} Pending
+            </span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Card 3: My Tasks Awaiting Boss Approval -->
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 border-purple">
-        <div class="card-stat-title">Waiting Boss Approval</div>
-        <div class="card-stat-value text-purple">{{ my_waiting_approval_count }}</div>
-        <div class="small text-muted mt-2">Submitted tasks undergoing review</div>
+    <!-- Card 3: Waiting Boss Approval -->
+    <div class="col-6 col-md-3">
+      <div class="card kpi-card-modern accent-purple h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+            <span class="kpi-label">Awaiting Review</span>
+            <div class="kpi-badge-icon badge-purple-subtle">
+              <i class="bi bi-hourglass-split"></i>
+            </div>
+          </div>
+          <div class="kpi-number" style="color: #C084FC;">{{ my_waiting_approval_count }}</div>
+        </div>
+        <div>
+          {% if my_waiting_approval_count > 0 %}
+          <div class="kpi-mini-pill kpi-pill-purple w-100 justify-content-center py-1">
+            <i class="bi bi-clock-history me-1"></i> Under Review
+          </div>
+          {% else %}
+          <div class="kpi-mini-pill kpi-pill-success w-100 justify-content-center py-1">
+            <i class="bi bi-check2-circle me-1"></i> All reviews done
+          </div>
+          {% endif %}
+        </div>
       </div>
     </div>
 
     <!-- Card 4: Monthly Completion Streak -->
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card card-stat border-0 shadow-sm h-100 border-start border-4 border-primary">
-        <div class="card-stat-title">Monthly Reports Consistency</div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <div class="card-stat-value text-primary">{{ user_monthly_tasks_count }} <span class="fs-6 text-muted">/ {{ num_days_in_month }} days</span></div>
-          <div class="fw-bold fs-4 text-primary">{{ completion_pct }}%</div>
+    <div class="col-6 col-md-3">
+      <div class="card kpi-card-modern accent-info h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+            <span class="kpi-label">Consistency</span>
+            <div class="kpi-badge-icon badge-info-subtle">
+              <i class="bi bi-award-fill"></i>
+            </div>
+          </div>
+          <div class="kpi-number text-info">{{ completion_pct }}%</div>
         </div>
-        <div class="progress mb-2" style="height: 6px;">
-          <div class="progress-bar bg-primary" role="progressbar" style="width: {{ completion_pct }}%;" aria-valuenow="{{ completion_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+        <div>
+          <div class="progress my-2" style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 99px;">
+            <div class="progress-bar bg-info" style="width: {{ completion_pct }}%; border-radius: 99px; background: linear-gradient(90deg, #0EA5E9, #2DD4BF) !important;"></div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" style="font-size: 0.70rem; font-weight: 500;">{{ user_monthly_tasks_count }}/{{ num_days_in_month }} days</span>
+            <span class="text-muted" style="font-size: 0.70rem;">{{ current_month_name }}</span>
+          </div>
         </div>
-        <div class="small text-muted">{{ current_month_name }} {{ today.year }}</div>
       </div>
     </div>
   </div>
@@ -518,7 +917,8 @@
                   <i class="bi bi-check2-circle me-1"></i> Resolve & Re-submit
                 </button>
               </form>
-              <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#empReallocModal_{{ task.id }}">
+              <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
+                data-bs-target="#empReallocModal_{{ task.id }}">
                 <i class="bi bi-arrow-left-right me-1"></i> Delegate
               </button>
             </div>
@@ -530,7 +930,8 @@
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
               <div class="modal-header border-bottom">
-                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right text-warning me-2"></i> Delegate Task to Colleague</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right text-warning me-2"></i> Delegate Task
+                  to Colleague</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <form method="post" action="{% url 'reports:task_reallocate' task.id %}">
@@ -551,7 +952,8 @@
                   </div>
                   <div class="mb-3">
                     <label class="form-label fw-semibold">Reason *</label>
-                    <textarea name="reason" class="form-control" rows="3" required placeholder="Why are you delegating this task?"></textarea>
+                    <textarea name="reason" class="form-control" rows="3" required
+                      placeholder="Why are you delegating this task?"></textarea>
                   </div>
                 </div>
                 <div class="modal-footer border-top">
@@ -582,7 +984,8 @@
         <div class="col-12 col-md-6 col-xl-4">
           <div class="p-3 rounded border bg-body-tertiary h-100 d-flex flex-column">
             <div class="d-flex justify-content-between align-items-start mb-2">
-              <span class="badge {% if task.status == 'APPROVED' %}badge-completed{% elif task.status == 'WAITING_APPROVAL' %}bg-purple text-white{% elif task.status == 'IN_PROGRESS' %}badge-inprogress{% else %}badge-pending{% endif %}">
+              <span
+                class="badge {% if task.status == 'APPROVED' %}badge-completed{% elif task.status == 'WAITING_APPROVAL' %}bg-purple text-white{% elif task.status == 'IN_PROGRESS' %}badge-inprogress{% else %}badge-pending{% endif %}">
                 {{ task.get_status_display }}
               </span>
               {% if task.priority == 'URGENT' %}
@@ -603,21 +1006,23 @@
 
             <div class="mt-auto pt-2 border-top">
               {% if task.status == 'WAITING_APPROVAL' %}
-                <span class="badge bg-purple text-white w-100 p-2"><i class="bi bi-hourglass-split me-1"></i> Awaiting Boss Approval</span>
+              <span class="badge bg-purple text-white w-100 p-2"><i class="bi bi-hourglass-split me-1"></i> Awaiting
+                Boss Approval</span>
               {% elif task.status == 'APPROVED' %}
-                <span class="badge badge-completed w-100 p-2"><i class="bi bi-check-all me-1"></i> Approved</span>
+              <span class="badge badge-completed w-100 p-2"><i class="bi bi-check-all me-1"></i> Approved</span>
               {% else %}
-                <div class="d-flex gap-2">
-                  <form method="post" action="{% url 'reports:task_mark_complete' task.id %}" class="flex-grow-1">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-success fw-bold w-100">
-                      <i class="bi bi-check2-circle me-1"></i> Mark Done
-                    </button>
-                  </form>
-                  <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#empReallocCardModal_{{ task.id }}" title="Delegate to Colleague">
-                    <i class="bi bi-arrow-left-right"></i>
+              <div class="d-flex gap-2">
+                <form method="post" action="{% url 'reports:task_mark_complete' task.id %}" class="flex-grow-1">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-success fw-bold w-100">
+                    <i class="bi bi-check2-circle me-1"></i> Mark Done
                   </button>
-                </div>
+                </form>
+                <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
+                  data-bs-target="#empReallocCardModal_{{ task.id }}" title="Delegate to Colleague">
+                  <i class="bi bi-arrow-left-right"></i>
+                </button>
+              </div>
               {% endif %}
             </div>
           </div>
@@ -628,7 +1033,8 @@
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
               <div class="modal-header border-bottom">
-                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right text-warning me-2"></i> Delegate Task</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right text-warning me-2"></i> Delegate Task
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <form method="post" action="{% url 'reports:task_reallocate' task.id %}">
@@ -649,7 +1055,8 @@
                   </div>
                   <div class="mb-3">
                     <label class="form-label fw-semibold">Reason *</label>
-                    <textarea name="reason" class="form-control" rows="3" required placeholder="Why are you delegating this task?"></textarea>
+                    <textarea name="reason" class="form-control" rows="3" required
+                      placeholder="Why are you delegating this task?"></textarea>
                   </div>
                 </div>
                 <div class="modal-footer border-top">
@@ -678,7 +1085,8 @@
         <h5 class="fw-bold mb-0 text-body">
           <i class="bi bi-activity text-primary me-2"></i> Team Activity & Accomplishments
         </h5>
-        <div class="small text-muted mt-1">Live updates on daily task submissions, compliance completions, and approved tasks</div>
+        <div class="small text-muted mt-1">Live updates on daily task submissions, compliance completions, and approved
+          tasks</div>
       </div>
       <a href="{% url 'audit:audit_log_list' %}" class="btn btn-sm btn-outline-primary">
         All Activity <i class="bi bi-arrow-right ms-1"></i>
@@ -703,7 +1111,8 @@
               </td>
               <td class="fw-semibold small">
                 <span class="d-inline-flex align-items-center">
-                  <span class="avatar-circle me-2" style="width: 26px; height: 26px; font-size: 0.75rem; background: var(--primary); color: #fff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
+                  <span class="avatar-circle me-2"
+                    style="width: 26px; height: 26px; font-size: 0.75rem; background: var(--primary); color: #fff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
                     {{ log.user.username|make_list|first|upper|default:"?" }}
                   </span>
                   {{ log.user.full_name|default:log.user.username|default:"Team" }}
@@ -711,37 +1120,38 @@
               </td>
               <td>
                 {% if log.action == 'DAILY_TASK_CREATED' or log.action == 'DAILY_TASK_UPDATED' %}
-                  <span class="badge bg-primary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
-                    <i class="bi bi-journal-check me-1"></i> Daily Report
-                  </span>
+                <span class="badge bg-primary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                  <i class="bi bi-journal-check me-1"></i> Daily Report
+                </span>
                 {% elif log.action == 'COMPLIANCE_MARKED_DONE' or log.action == 'COMPLIANCE_ITEM_COMPLETED' %}
-                  <span class="badge bg-success text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
-                    <i class="bi bi-shield-check me-1"></i> Compliance Done
-                  </span>
+                <span class="badge bg-success text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                  <i class="bi bi-shield-check me-1"></i> Compliance Done
+                </span>
                 {% elif log.action == 'COMPLIANCE_MARKED_NA' %}
-                  <span class="badge bg-secondary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
-                    <i class="bi bi-slash-circle me-1"></i> Compliance N/A
-                  </span>
+                <span class="badge bg-secondary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                  <i class="bi bi-slash-circle me-1"></i> Compliance N/A
+                </span>
                 {% elif log.action == 'TASK_APPROVED' %}
-                  <span class="badge text-white py-1 px-2 fw-semibold shadow-sm" style="font-size: 0.78rem; background-color: #8B5CF6 !important;">
-                    <i class="bi bi-trophy-fill me-1"></i> Approved by Boss
-                  </span>
+                <span class="badge text-white py-1 px-2 fw-semibold shadow-sm"
+                  style="font-size: 0.78rem; background-color: #8B5CF6 !important;">
+                  <i class="bi bi-trophy-fill me-1"></i> Approved by Boss
+                </span>
                 {% elif log.action == 'TASK_MARKED_COMPLETED' %}
-                  <span class="badge bg-info text-dark py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
-                    <i class="bi bi-hourglass-split me-1"></i> Waiting Approval
-                  </span>
+                <span class="badge bg-info text-dark py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                  <i class="bi bi-hourglass-split me-1"></i> Waiting Approval
+                </span>
                 {% elif log.action == 'TASK_REALLOCATED' %}
-                  <span class="badge bg-warning text-dark py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
-                    <i class="bi bi-arrow-left-right me-1"></i> Delegated
-                  </span>
+                <span class="badge bg-warning text-dark py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                  <i class="bi bi-arrow-left-right me-1"></i> Delegated
+                </span>
                 {% elif log.action == 'ASSIGNED_TASK_CREATED' %}
-                  <span class="badge bg-primary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
-                    <i class="bi bi-plus-circle me-1"></i> Task Allocated
-                  </span>
+                <span class="badge bg-primary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                  <i class="bi bi-plus-circle me-1"></i> Task Allocated
+                </span>
                 {% else %}
-                  <span class="badge bg-secondary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
-                    {{ log.action|cut:"_"|title }}
-                  </span>
+                <span class="badge bg-secondary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                  {{ log.action|cut:"_"|title }}
+                </span>
                 {% endif %}
               </td>
               <td class="small text-body fw-medium">
@@ -781,7 +1191,9 @@
           <div class="modal-body p-4">
             <div class="mb-3">
               <label class="form-label fw-semibold">Task Description / Daily Accomplishments *</label>
-              <textarea name="task_description" class="form-control" rows="4" placeholder="What work did you accomplish today?" required>{% if today_task %}{{ today_task.task_description }}{% endif %}</textarea>
+              <textarea name="task_description" class="form-control" rows="4"
+                placeholder="What work did you accomplish today?"
+                required>{% if today_task %}{{ today_task.task_description }}{% endif %}</textarea>
             </div>
           </div>
 
@@ -803,87 +1215,113 @@
 {% if role == 'BOSS' %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-(function () {
-  'use strict';
-  const taskData = {{ task_status_chart|safe }};
-  const empData  = {{ emp_bar_chart|safe }};
-  const dailyData = {{ daily_bar_chart|safe }};
-  const compData = {{ compliance_chart|safe }};
+  (function () {
+    'use strict';
+    const taskData = {{ task_status_chart|safe }};
+    const empData = {{ emp_bar_chart|safe }};
+    const dailyData = {{ daily_bar_chart|safe }};
+    const compData = {{ compliance_chart|safe }};
 
-  const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
-  const gridColor = () => isDark() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-  const labelColor = () => isDark() ? '#94A3B8' : '#475569';
+    const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = () => isDark() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+    const labelColor = () => isDark() ? '#94A3B8' : '#475569';
+    const doughnutBorder = () => isDark() ? '#1E293B' : '#ffffff';
 
-  /* Task Status Donut */
-  new Chart(document.getElementById('taskStatusPieChart'), {
-    type: 'doughnut',
-    data: { labels: taskData.labels, datasets: [{ data: taskData.data, backgroundColor: taskData.colors, borderWidth: 3, borderColor: isDark() ? '#1E293B' : '#fff' }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
-      plugins: { legend: { position: 'bottom', labels: { color: labelColor(), padding: 14, font: { size: 12, family: 'Inter' } } } }
-    }
-  });
-
-  /* Compliance Donut */
-  new Chart(document.getElementById('compliancePieChart'), {
-    type: 'doughnut',
-    data: { labels: compData.labels, datasets: [{ data: compData.data, backgroundColor: compData.colors, borderWidth: 3, borderColor: isDark() ? '#1E293B' : '#fff' }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
-      plugins: { legend: { position: 'bottom', labels: { color: labelColor(), padding: 14, font: { size: 12, family: 'Inter' } } } }
-    }
-  });
-
-  /* Monthly Report Submission Bar */
-  new Chart(document.getElementById('dailyBarChart'), {
-    type: 'bar',
-    data: { labels: dailyData.labels,
-      datasets: [
-        { 
-          label: 'Submitted', 
-          data: dailyData.submitted, 
-          backgroundColor: dailyData.colors || 'rgba(34,197,94,0.75)', 
-          borderRadius: 5 
-        },
-        { 
-          label: 'Total Days', 
-          data: dailyData.total, 
-          backgroundColor: 'rgba(148,163,184,0.18)', 
-          borderRadius: 5 
-        }
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false,
-      plugins: { 
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            afterLabel: function(context) {
-              if (context.dataset.label === 'Submitted' && dailyData.today_submitted) {
-                const isSub = dailyData.today_submitted[context.dataIndex];
-                return isSub ? "Today's Report: Submitted (Green)" : "Today's Report: Not Submitted (Red)";
-              }
-              return '';
-            }
+    /* Task Status Donut */
+    const taskPieChart = new Chart(document.getElementById('taskStatusPieChart'), {
+      type: 'doughnut',
+      data: { labels: taskData.labels, datasets: [{ data: taskData.data, backgroundColor: taskData.colors, borderWidth: 3, borderColor: doughnutBorder() }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        layout: { padding: { top: 4, bottom: 4 } },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: labelColor(), padding: 14, boxWidth: 12, font: { size: 12, family: 'Inter', weight: 500 } }
           }
         }
-      },
-      scales: {
-        x: { ticks: { color: labelColor(), font: { size: 11 } }, grid: { color: gridColor() } },
-        y: { ticks: { color: labelColor(), font: { size: 11 }, stepSize: 1 }, grid: { color: gridColor() } }
       }
-    }
-  });
+    });
 
-  /* Employee Task Distribution Bar (Grouped view only, no stacked view, no In Progress bar) */
+    /* Compliance Donut */
+    const compPieChart = new Chart(document.getElementById('compliancePieChart'), {
+      type: 'doughnut',
+      data: { labels: compData.labels, datasets: [{ data: compData.data, backgroundColor: compData.colors, borderWidth: 3, borderColor: doughnutBorder() }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        layout: { padding: { top: 4, bottom: 4 } },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: labelColor(), padding: 14, boxWidth: 12, font: { size: 12, family: 'Inter', weight: 500 } }
+          }
+        }
+      }
+    });
+
+    /* Monthly Report Submission — Green if submitted today, Red if not submitted today; Grey background for total days */
+    const barColors = dailyData.today_submitted.map(s => s ? 'rgba(34,197,94,0.85)' : 'rgba(239,68,68,0.85)');
+    const barHoverColors = dailyData.today_submitted.map(s => s ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)');
+
+    const dailyChart = new Chart(document.getElementById('dailyBarChart'), {
+      type: 'bar',
+      data: {
+        labels: dailyData.labels,
+        datasets: [
+          {
+            label: 'Monthly Reports',
+            data: dailyData.submitted,
+            backgroundColor: barColors,
+            hoverBackgroundColor: barHoverColors,
+            borderRadius: 5,
+            order: 1,
+          },
+          {
+            label: 'Total Days',
+            data: dailyData.total,
+            backgroundColor: 'rgba(148,163,184,0.18)',
+            borderRadius: 5,
+            order: 2,
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              afterBody: function (context) {
+                const idx = context[0].dataIndex;
+                const sub = dailyData.submitted[idx];
+                const total = dailyData.total[idx];
+                const pct = total > 0 ? Math.round((sub / total) * 100) : 0;
+                const todayStatus = dailyData.today_submitted[idx] ? '✓ Submitted today' : '✗ Not submitted today';
+                return [`Submission rate: ${pct}% (${sub}/${total} days)`, todayStatus];
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: labelColor(), font: { size: 11 } }, grid: { color: gridColor() } },
+          y: { ticks: { color: labelColor(), font: { size: 11 }, stepSize: 1 }, grid: { color: gridColor() } }
+        }
+      }
+    });
+
+  /* Employee Task Distribution Bar */
   const empChart = new Chart(document.getElementById('empBarChart'), {
     type: 'bar',
-    data: { labels: empData.labels,
+    data: {
+      labels: empData.labels,
       datasets: [
-        { label: 'Pending',   data: empData.pending,   backgroundColor: 'rgba(245,158,11,0.82)',  borderRadius: 4 },
-        { label: 'Awaiting', data: empData.waiting,  backgroundColor: 'rgba(168,85,247,0.82)', borderRadius: 4 },
-        { label: 'Approved',  data: empData.approved,  backgroundColor: 'rgba(34,197,94,0.82)',  borderRadius: 4 }
+        { label: 'Pending', data: empData.pending, backgroundColor: 'rgba(245,158,11,0.82)', borderRadius: 4 },
+        { label: 'Awaiting', data: empData.waiting, backgroundColor: 'rgba(168,85,247,0.82)', borderRadius: 4 },
+        { label: 'Approved', data: empData.approved, backgroundColor: 'rgba(34,197,94,0.82)', borderRadius: 4 }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false,
+    options: {
+      responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
         x: { stacked: false, ticks: { color: labelColor(), font: { size: 12, family: 'Inter' } }, grid: { color: gridColor() } },
@@ -891,69 +1329,91 @@
       }
     }
   });
+
+  /* Theme Change Handler */
+  window.addEventListener('themeChanged', function () {
+    const border = doughnutBorder();
+    const lc = labelColor();
+    const gc = gridColor();
+
+    [taskPieChart, compPieChart].forEach(chart => {
+      chart.data.datasets[0].borderColor = border;
+      chart.options.plugins.legend.labels.color = lc;
+      chart.update();
+    });
+
+    [dailyChart, empChart].forEach(chart => {
+      if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = lc;
+      const sc = chart.options.scales;
+      if (sc.x) { sc.x.ticks.color = lc; sc.x.grid.color = gc; }
+      if (sc.y) { sc.y.ticks.color = lc; sc.y.grid.color = gc; }
+      chart.update();
+    });
+  });
+
 })();
 </script>
 {% endif %}
 
 {% if role == 'EMPLOYEE' %}
 <script>
-// Live Statutory Tax Deadlines Countdown for Beside-Welcome Card
-(function() {
-  const cards = document.querySelectorAll('.tax-countdown-card');
-  if (!cards.length) return;
+  // Live Statutory Tax Deadlines Countdown for Beside-Welcome Card
+  (function () {
+    const cards = document.querySelectorAll('.tax-countdown-card');
+    if (!cards.length) return;
 
-  function updateCountdowns() {
-    const now = new Date().getTime();
+    function updateCountdowns() {
+      const now = new Date().getTime();
 
-    cards.forEach(card => {
-      const targetStr = card.getAttribute('data-target');
-      if (!targetStr) return;
-      const targetDate = new Date(targetStr).getTime();
-      const diff = targetDate - now;
+      cards.forEach(card => {
+        const targetStr = card.getAttribute('data-target');
+        if (!targetStr) return;
+        const targetDate = new Date(targetStr).getTime();
+        const diff = targetDate - now;
 
-      const slug = card.id.replace('taxCountdownCard_', '');
-      const elTime = document.getElementById('cntTime_' + slug);
-      const elBadge = document.getElementById('badgePhase_' + slug);
+        const slug = card.id.replace('taxCountdownCard_', '');
+        const elTime = document.getElementById('cntTime_' + slug);
+        const elBadge = document.getElementById('badgePhase_' + slug);
 
-      if (diff <= 0) {
-        if (elTime) elTime.innerText = '00h 00m 00s';
-        card.classList.remove('tax-countdown-yellow', 'tax-countdown-orange');
-        card.classList.add('tax-countdown-red');
-        if (elBadge) elBadge.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> DUE';
-        return;
-      }
+        if (diff <= 0) {
+          if (elTime) elTime.innerText = '00h 00m 00s';
+          card.classList.remove('tax-countdown-yellow', 'tax-countdown-orange');
+          card.classList.add('tax-countdown-red');
+          if (elBadge) elBadge.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> DUE';
+          return;
+        }
 
-      const totalHours = Math.floor(diff / (1000 * 60 * 60));
-      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+        const totalHours = Math.floor(diff / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
-      const hStr = String(totalHours).padStart(2, '0');
-      const mStr = String(mins).padStart(2, '0');
-      const sStr = String(secs).padStart(2, '0');
+        const hStr = String(totalHours).padStart(2, '0');
+        const mStr = String(mins).padStart(2, '0');
+        const sStr = String(secs).padStart(2, '0');
 
-      if (elTime) elTime.innerText = `${hStr}h ${mStr}m ${sStr}s`;
+        if (elTime) elTime.innerText = `${hStr}h ${mStr}m ${sStr}s`;
 
-      // Dynamic Color Progression:
-      // > 24 hours remaining: Yellow (starts at 48h / 1 day before midnight)
-      // 12 to 24 hours remaining: Orange (hours dwindling)
-      // < 12 hours remaining: Red (final countdown)
-      card.classList.remove('tax-countdown-yellow', 'tax-countdown-orange', 'tax-countdown-red');
-      if (totalHours >= 24) {
-        card.classList.add('tax-countdown-yellow');
-        if (elBadge) elBadge.innerHTML = '<i class="bi bi-clock-history me-1"></i> DUE TOMORROW';
-      } else if (totalHours >= 12) {
-        card.classList.add('tax-countdown-orange');
-        if (elBadge) elBadge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> DUE IN ' + totalHours + 'H';
-      } else {
-        card.classList.add('tax-countdown-red');
-        if (elBadge) elBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> FINAL ' + totalHours + 'H';
-      }
-    });
-  }
+        // Dynamic Color Progression:
+        // > 24 hours remaining: Yellow (starts at 48h / 1 day before midnight)
+        // 12 to 24 hours remaining: Orange (hours dwindling)
+        // < 12 hours remaining: Red (final countdown)
+        card.classList.remove('tax-countdown-yellow', 'tax-countdown-orange', 'tax-countdown-red');
+        if (totalHours >= 24) {
+          card.classList.add('tax-countdown-yellow');
+          if (elBadge) elBadge.innerHTML = '<i class="bi bi-clock-history me-1"></i> DUE TOMORROW';
+        } else if (totalHours >= 12) {
+          card.classList.add('tax-countdown-orange');
+          if (elBadge) elBadge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> DUE IN ' + totalHours + 'H';
+        } else {
+          card.classList.add('tax-countdown-red');
+          if (elBadge) elBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> FINAL ' + totalHours + 'H';
+        }
+      });
+    }
 
-  updateCountdowns();
-  setInterval(updateCountdowns, 1000);
-})();
+    updateCountdowns();
+    setInterval(updateCountdowns, 1000);
+  })();
 </script>
 {% endif %}
 {% endblock %}

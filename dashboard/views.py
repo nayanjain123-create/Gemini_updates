@@ -157,18 +157,45 @@ def dashboard_index(request):
         })
 
         # 8. Chart.js JSON Data ─ Daily Report Submission Bar Chart (per employee this month)
-        # Bar color: Green if today's report is submitted; Red if not submitted for today yet
-        daily_colors = [
-            'rgba(34, 197, 94, 0.82)' if item['today_submitted'] else 'rgba(239, 68, 68, 0.82)'
-            for item in employee_matrix
-        ]
+        # Elapsed days = days so far in the month (up to and including today)
+        elapsed_days = today.day
         daily_bar_chart = json.dumps({
             'labels': emp_bar_labels,
             'submitted': [item['monthly_reports_count'] for item in employee_matrix],
+            'not_submitted': [
+                max(0, elapsed_days - item['monthly_reports_count'])
+                for item in employee_matrix
+            ],
             'total': [num_days_in_month for _ in employee_matrix],
             'today_submitted': [bool(item['today_submitted']) for item in employee_matrix],
-            'colors': daily_colors,
         })
+
+        # 8b. Monthly Submission Grid (rows=days, cols=employees)
+        # Query all reports this month as a set of (employee_id, day) tuples
+        month_all_reports = DailyTaskReport.objects.filter(
+            report_date__year=current_year,
+            report_date__month=current_month,
+            employee__in=active_employees,
+        ).values_list('employee_id', 'report_date__day')
+        submitted_set = set((emp_id, day) for emp_id, day in month_all_reports)
+
+        monthly_grid = []
+        for day_num in range(1, num_days_in_month + 1):
+            day_date = date(current_year, current_month, day_num)
+            is_past_or_today = day_date <= today
+            row = {
+                'day': day_num,
+                'is_past_or_today': is_past_or_today,
+                'cells': [],
+            }
+            for emp in active_employees:
+                if not is_past_or_today:
+                    row['cells'].append(None)   # future — blank
+                elif (emp.id, day_num) in submitted_set:
+                    row['cells'].append(True)   # submitted — green
+                else:
+                    row['cells'].append(False)  # missed — red
+            monthly_grid.append(row)
 
         # 9. Chart.js JSON Data ─ Compliance Pie
         compliance_chart = json.dumps({
@@ -207,6 +234,8 @@ def dashboard_index(request):
             'daily_bar_chart': daily_bar_chart,
             'compliance_chart': compliance_chart,
             'num_days_in_month': num_days_in_month,
+            'monthly_grid': monthly_grid,
+            'monthly_grid_employees': list(active_employees),
         }
     else:
         # ==================== EMPLOYEE PERSONAL COCKPIT ====================
@@ -348,6 +377,7 @@ def dashboard_index(request):
             'num_days_in_month': num_days_in_month,
             'completion_pct': completion_pct,
             'my_tasks': my_tasks[:6],
+            'my_total_tasks_count': my_tasks.count(),
             'my_pending_count': my_pending_tasks.count(),
             'my_inprogress_count': my_inprogress_tasks.count(),
             'my_waiting_approval_count': my_waiting_approval_tasks.count(),

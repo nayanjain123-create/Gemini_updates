@@ -693,6 +693,24 @@ def task_edit_view(request, task_id):
     return render(request, 'reports/assigned_task_form.html', {'form': form, 'task': task})
 
 
+@login_required
+@boss_required
+def task_delete_view(request, task_id):
+    """Boss deletes an assigned task."""
+    task = get_object_or_404(AssignedTask, id=task_id)
+    title = task.title
+    task.delete()
+    log_action(
+        request.user,
+        'ASSIGNED_TASK_DELETED',
+        'AssignedTask',
+        task_id,
+        f"Boss deleted assigned task '{title}'."
+    )
+    messages.success(request, f"Task '{title}' has been deleted.")
+    return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
+
 # ==================== NOTIFICATIONS API & VIEWS ====================
 
 @login_required
