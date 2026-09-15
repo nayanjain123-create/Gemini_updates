@@ -309,6 +309,7 @@ strong, b {
   background-color: var(--bg-navbar);
   border-bottom: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 1030;
@@ -1345,10 +1346,10 @@ footer {
    PWA & Mobile Usability Enhancements
    ========================================================================== */
 
-/* Prevent horizontal overflow on narrow screens */
+/* Prevent horizontal overflow without breaking position: sticky */
 html, body {
-  overflow-x: hidden;
-  max-width: 100vw;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 /* Safe area insets for modern mobile devices with notches / home indicators */

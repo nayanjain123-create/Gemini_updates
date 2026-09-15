@@ -175,6 +175,10 @@
     background: linear-gradient(90deg, #F59E0B 0%, #FBBF24 60%, transparent 100%);
     box-shadow: 0 1px 6px rgba(245, 158, 11, 0.4);
   }
+  .kpi-card-modern.accent-danger::before {
+    background: linear-gradient(90deg, #EF4444 0%, #F87171 60%, transparent 100%);
+    box-shadow: 0 1px 6px rgba(239, 68, 68, 0.4);
+  }
   .kpi-card-modern.accent-secondary::before {
     background: linear-gradient(90deg, #64748B 0%, #94A3B8 60%, transparent 100%);
     box-shadow: 0 1px 6px rgba(100, 116, 139, 0.4);
@@ -190,6 +194,9 @@
   }
   .kpi-card-modern.accent-warning {
     background-image: radial-gradient(circle at 85% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 60%) !important;
+  }
+  .kpi-card-modern.accent-danger {
+    background-image: radial-gradient(circle at 85% 15%, rgba(239, 68, 68, 0.12) 0%, transparent 60%) !important;
   }
   .kpi-card-modern.accent-secondary {
     background-image: radial-gradient(circle at 85% 15%, rgba(100, 116, 139, 0.12) 0%, transparent 60%) !important;
@@ -226,6 +233,7 @@
   }
   .badge-primary-subtle { background: rgba(59, 130, 246, 0.14); color: #60A5FA; }
   .badge-warning-subtle { background: rgba(245, 158, 11, 0.14); color: #FBBF24; }
+  .badge-danger-subtle { background: rgba(239, 68, 68, 0.14); color: #EF4444; }
   .badge-purple-subtle { background: rgba(168, 85, 247, 0.14); color: #C084FC; }
   .badge-success-subtle { background: rgba(34, 197, 94, 0.14); color: #4ADE80; }
   .badge-secondary-subtle { background: rgba(100, 116, 139, 0.14); color: #94A3B8; }
@@ -299,15 +307,15 @@
 
     <div class="col-6 col-md-3 col-xl">
       <a href="{% url 'reports:task_list' %}?status=PENDING" class="text-decoration-none">
-        <div class="card kpi-card-modern accent-warning h-100 d-flex flex-column justify-content-between">
+        <div class="card kpi-card-modern accent-danger h-100 d-flex flex-column justify-content-between">
           <div>
             <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
               <span class="kpi-label">Pending</span>
-              <div class="kpi-badge-icon badge-warning-subtle">
+              <div class="kpi-badge-icon badge-danger-subtle">
                 <i class="bi bi-clock-history"></i>
               </div>
             </div>
-            <div class="kpi-number" style="color: #FBBF24;">{{ pending_count }}</div>
+            <div class="kpi-number text-danger">{{ pending_count }}</div>
           </div>
           <div class="small text-muted mt-1">Awaiting action</div>
         </div>
@@ -350,15 +358,15 @@
 
     <div class="col-12 col-md-3 col-xl">
       <a href="{% url 'reports:task_list' %}?reallocated=1" class="text-decoration-none">
-        <div class="card kpi-card-modern accent-secondary h-100 d-flex flex-column justify-content-between">
+        <div class="card kpi-card-modern accent-warning h-100 d-flex flex-column justify-content-between">
           <div>
             <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
               <span class="kpi-label">Delegated</span>
-              <div class="kpi-badge-icon badge-secondary-subtle">
+              <div class="kpi-badge-icon badge-warning-subtle">
                 <i class="bi bi-arrow-left-right"></i>
               </div>
             </div>
-            <div class="kpi-number text-secondary">{{ reallocated_count }}</div>
+            <div class="kpi-number" style="color: #FBBF24;">{{ reallocated_count }}</div>
           </div>
           <div class="small text-muted mt-1">Delegated tasks</div>
         </div>
@@ -455,12 +463,9 @@
               <a href="{% url 'reports:task_edit' task.id %}" class="task-icon-btn text-primary" title="Edit Task Details">
                 <i class="bi bi-pencil-fill"></i>
               </a>
-              <form method="post" action="{% url 'reports:task_delete' task.id %}" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to delete task &quot;{{ task.title|escapejs }}&quot;?');">
-                {% csrf_token %}
-                <button type="submit" class="task-icon-btn text-danger" title="Delete Task">
-                  <i class="bi bi-trash3-fill"></i>
-                </button>
-              </form>
+              <button type="button" class="task-icon-btn text-danger" title="Delete Task" onclick="showDeleteTaskModal('{% url 'reports:task_delete' task.id %}', '{{ task.title|escapejs }}')">
+                <i class="bi bi-trash3-fill"></i>
+              </button>
               {% endif %}
             </div>
           </div>
@@ -543,12 +548,10 @@
             <div>
               {% if task.status == 'WAITING_APPROVAL' %}
                 <div class="d-flex gap-2 align-items-center">
-                  <form method="post" action="{% url 'reports:task_approve' task.id %}" class="flex-grow-1 m-0">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-success fw-bold w-100 py-1.5 shadow-sm d-flex align-items-center justify-content-center gap-1">
-                      <i class="bi bi-check2-circle fs-6"></i> Approve Task
-                    </button>
-                  </form>
+                  <button type="button" class="btn btn-sm btn-success fw-bold flex-grow-1 py-1.5 shadow-sm d-flex align-items-center justify-content-center gap-1"
+                          onclick="showApproveTaskModal('{% url 'reports:task_approve' task.id %}', '{{ task.title|escapejs }}')">
+                    <i class="bi bi-check2-circle fs-6"></i> Approve Task
+                  </button>
                   <button type="button" class="btn btn-sm fw-semibold px-3 py-1.5 d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#remarkModal_{{ task.id }}" style="background: rgba(239, 68, 68, 0.12); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.28);">
                     <i class="bi bi-chat-dots"></i> Add Remark
                   </button>
@@ -579,12 +582,11 @@
                 {% else %}
                   <!-- Complete & Delegate Buttons -->
                   <div class="d-flex gap-2">
-                    <form method="post" action="{% url 'reports:task_mark_complete' task.id %}" class="flex-grow-1 m-0">
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-success fw-bold w-100 py-1.5 shadow-sm d-flex align-items-center justify-content-center gap-1" title="Mark done and notify boss for approval">
-                        <i class="bi bi-check2-circle fs-6"></i> Mark Completed
-                      </button>
-                    </form>
+                    <button type="button" class="btn btn-sm btn-success fw-bold flex-grow-1 py-1.5 shadow-sm d-flex align-items-center justify-content-center gap-1"
+                            title="Mark done and notify boss for approval"
+                            onclick="showMarkCompleteModal('{% url 'reports:task_mark_complete' task.id %}', '{{ task.title|escapejs }}')">
+                      <i class="bi bi-check2-circle fs-6"></i> Mark Completed
+                    </button>
                     <button type="button" class="btn btn-sm btn-outline-warning fw-semibold px-3 py-1.5 d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#reallocateModal_{{ task.id }}" title="Delegate/Transfer task to a colleague">
                       <i class="bi bi-arrow-left-right"></i> Delegate
                     </button>
@@ -657,7 +659,7 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-custom">
           <div class="modal-header border-bottom">
-            <h5 class="modal-title fw-bold"><i class="bi bi-chat-left-dots text-danger me-2"></i> Boss Remark & Revision</h5>
+            <h5 class="modal-title fw-bold"><i class="bi bi-chat-left-dots text-danger me-2"></i> Boss Remark</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <form method="post" action="{% url 'reports:task_remark' task.id %}">
@@ -675,10 +677,10 @@
                 <div class="form-text text-danger">Submitting this remark will automatically revert the task to <strong>Pending</strong> status and notify the employee.</div>
               </div>
             </div>
-            <div class="modal-footer border-top">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-danger fw-bold px-4">
-                <i class="bi bi-send-exclamation-fill me-1"></i> Send Remark & Revert to Pending
+            <div class="modal-footer border-top d-flex gap-2 justify-content-end">
+              <button type="button" class="btn btn-secondary px-3 py-2 fw-semibold flex-grow-1 flex-md-grow-0" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger fw-bold px-4 py-2 flex-grow-1 flex-md-grow-0 d-inline-flex align-items-center justify-content-center gap-1">
+                <i class="bi bi-send-fill me-1"></i> Send Remark
               </button>
             </div>
           </form>
@@ -830,5 +832,134 @@
   </div>
 </div>
 {% endif %}
+
+<!-- Mark Completed Confirmation Modal (KPI Card Style) -->
+<div class="modal fade" id="markCompleteConfirmModal" tabindex="-1" aria-labelledby="markCompleteConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 390px;">
+    <div class="modal-content kpi-modal-success border-0">
+      <div class="kpi-modal-accent-success"></div>
+      <div class="modal-body p-4 text-center">
+        <div class="kpi-icon-badge-success mb-3">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <h4 class="fw-bold mb-2" id="markCompleteConfirmModalLabel">Submit for Approval</h4>
+        <p class="text-muted small mb-4">
+          Are you sure you want to mark task <strong id="markCompleteModalTitle" class="text-body"></strong> as completed? It will be submitted to your boss for final review.
+        </p>
+        <form id="markCompleteConfirmForm" method="post" action="">
+          {% csrf_token %}
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-secondary px-3 py-2 fw-semibold rounded-3 flex-grow-1" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-success px-3 py-2 fw-bold rounded-3 shadow-sm flex-grow-1 d-inline-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-check2-circle"></i> Submit Done
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if user.is_boss %}
+<!-- Approve Task Confirmation Modal (KPI Card Style) -->
+<div class="modal fade" id="approveTaskConfirmModal" tabindex="-1" aria-labelledby="approveTaskConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 390px;">
+    <div class="modal-content kpi-modal-purple border-0">
+      <div class="kpi-modal-accent-purple"></div>
+      <div class="modal-body p-4 text-center">
+        <div class="kpi-icon-badge-purple mb-3">
+          <i class="bi bi-trophy-fill"></i>
+        </div>
+        <h4 class="fw-bold mb-2" id="approveTaskConfirmModalLabel">Approve Task</h4>
+        <p class="text-muted small mb-4">
+          Are you sure you want to approve task <strong id="approveTaskModalTitle" class="text-body"></strong>? This will finalize the task and notify the employee.
+        </p>
+        <form id="approveTaskConfirmForm" method="post" action="">
+          {% csrf_token %}
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-secondary px-3 py-2 fw-semibold rounded-3 flex-grow-1" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="submit" class="btn fw-bold px-3 py-2 rounded-3 shadow-sm flex-grow-1 d-inline-flex align-items-center justify-content-center gap-2 text-white" style="background: #8B5CF6;">
+              <i class="bi bi-check2-all"></i> Approve
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Task Confirmation Modal (KPI Card Style) -->
+<div class="modal fade" id="deleteTaskConfirmModal" tabindex="-1" aria-labelledby="deleteTaskConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+    <div class="modal-content logout-kpi-modal border-0">
+      <div class="logout-modal-accent"></div>
+      <div class="modal-body p-4 text-center">
+        <div class="logout-icon-badge mb-3">
+          <i class="bi bi-trash3-fill"></i>
+        </div>
+        <h4 class="fw-bold mb-2" id="deleteTaskConfirmModalLabel">Delete Task</h4>
+        <p class="text-muted small mb-4">
+          Are you sure you want to delete task <strong id="deleteTaskModalTitle" class="text-body"></strong>? This action cannot be undone.
+        </p>
+        <form id="deleteTaskConfirmForm" method="post" action="">
+          {% csrf_token %}
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-secondary px-3 py-2 fw-semibold rounded-3 flex-grow-1" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-danger px-3 py-2 fw-bold rounded-3 shadow-sm flex-grow-1 d-inline-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-trash3-fill"></i> Delete
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function showMarkCompleteModal(actionUrl, taskTitle) {
+  const form = document.getElementById('markCompleteConfirmForm');
+  const titleSpan = document.getElementById('markCompleteModalTitle');
+  if (form) form.action = actionUrl;
+  if (titleSpan) titleSpan.textContent = taskTitle ? '"' + taskTitle + '"' : 'this task';
+  const modalEl = document.getElementById('markCompleteConfirmModal');
+  if (modalEl) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
+}
+
+{% if user.is_boss %}
+function showApproveTaskModal(actionUrl, taskTitle) {
+  const form = document.getElementById('approveTaskConfirmForm');
+  const titleSpan = document.getElementById('approveTaskModalTitle');
+  if (form) form.action = actionUrl;
+  if (titleSpan) titleSpan.textContent = taskTitle ? '"' + taskTitle + '"' : 'this task';
+  const modalEl = document.getElementById('approveTaskConfirmModal');
+  if (modalEl) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
+}
+
+function showDeleteTaskModal(deleteUrl, taskTitle) {
+  const form = document.getElementById('deleteTaskConfirmForm');
+  const titleSpan = document.getElementById('deleteTaskModalTitle');
+  if (form) form.action = deleteUrl;
+  if (titleSpan) titleSpan.textContent = taskTitle ? '"' + taskTitle + '"' : 'this task';
+  const modalEl = document.getElementById('deleteTaskConfirmModal');
+  if (modalEl) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
+}
+{% endif %}
+</script>
 
 {% endblock %}

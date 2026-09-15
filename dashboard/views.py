@@ -376,7 +376,7 @@ def dashboard_index(request):
             'user_monthly_tasks_count': user_monthly_tasks_count,
             'num_days_in_month': num_days_in_month,
             'completion_pct': completion_pct,
-            'my_tasks': my_tasks[:6],
+            'my_tasks': my_tasks.exclude(status=AssignedTask.APPROVED)[:3],
             'my_total_tasks_count': my_tasks.count(),
             'my_pending_count': my_pending_tasks.count(),
             'my_inprogress_count': my_inprogress_tasks.count(),

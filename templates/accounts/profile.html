@@ -5,21 +5,39 @@
 {% block content %}
 <div class="container my-4">
   <div class="row justify-content-center">
-    <div class="col-12 col-md-10 col-lg-8">
-      
-      <div class="card card-stat border-0 shadow mb-4">
+    <div class="col-12 col-lg-10 col-xl-9">
+
+      <!-- Page Header -->
+      <div class="mb-3 mb-md-4">
+        <h2 class="fw-bold mb-1">
+          <i class="bi bi-person-circle text-primary me-2"></i>My Profile
+        </h2>
+        <p class="text-muted small mb-0 d-none d-md-block">View your account credentials, role authorizations, and personal settings.</p>
+      </div>
+
+      <!-- Main Profile KPI Form Card -->
+      <div class="card card-stat border-0 shadow-sm position-relative overflow-hidden mb-4">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 60%, transparent 100%);"></div>
+
         <div class="card-body p-4">
+          <!-- Profile Identity Header -->
           <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; font-size: 1.75rem;">
-              <i class="bi bi-person-fill"></i>
+            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm flex-shrink-0"
+                 style="width: 62px; height: 62px; font-size: 1.6rem; background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: #fff;">
+              {{ user.username|make_list|first|upper|default:"U" }}
             </div>
-            <div>
-              <h3 class="fw-bold mb-1">{{ user.full_name|default:user.username }}</h3>
-              <div class="d-flex align-items-center gap-2">
+            <div class="flex-grow-1 min-w-0">
+              <h4 class="fw-bold mb-0 text-body text-truncate">{{ user.full_name|default:user.username }}</h4>
+              <div class="text-muted small mb-1">@{{ user.username }} &bull; {{ user.email }}</div>
+              <div class="d-flex flex-wrap align-items-center gap-2">
                 <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %}">
                   {{ user.get_role_display }}
                 </span>
-                <span class="text-muted small">Member since {{ user.date_joined|date:"F d, Y" }}</span>
+                {% if user.is_helper %}
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle">
+                  <i class="bi bi-star-fill me-1"></i> Helper Designated
+                </span>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -28,58 +46,86 @@
             {% csrf_token %}
 
             <div class="row g-3">
+              <!-- Full Name -->
               <div class="col-12 col-md-6">
-                <label class="form-label fw-semibold">Username (Read-only)</label>
-                <input type="text" class="form-control" value="{{ user.username }}" readonly disabled>
-              </div>
-
-              <div class="col-12 col-md-6">
-                <label class="form-label fw-semibold">Role (Read-only)</label>
-                <input type="text" class="form-control" value="{{ user.get_role_display }}" readonly disabled>
-              </div>
-
-              <div class="col-12 col-md-6">
-                <label for="{{ form.full_name.id_for_label }}" class="form-label fw-semibold">Full Name</label>
-                {{ form.full_name }}
+                <label for="{{ form.full_name.id_for_label }}" class="form-label fw-semibold small text-muted text-uppercase mb-1">
+                  Full Name
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-tertiary"><i class="bi bi-person text-muted"></i></span>
+                  {{ form.full_name }}
+                </div>
                 {% if form.full_name.errors %}
                 <div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>
                 {% endif %}
               </div>
 
+              <!-- Username (Read-Only) -->
               <div class="col-12 col-md-6">
-                <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email Address</label>
-                {{ form.email }}
+                <label class="form-label fw-semibold small text-muted text-uppercase mb-1">
+                  Username (Fixed)
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-tertiary"><i class="bi bi-at text-muted"></i></span>
+                  <input type="text" class="form-control bg-body-secondary" value="{{ user.username }}" readonly disabled>
+                </div>
+              </div>
+
+              <!-- Email Address -->
+              <div class="col-12 col-md-6">
+                <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold small text-muted text-uppercase mb-1">
+                  Email Address
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-tertiary"><i class="bi bi-envelope text-muted"></i></span>
+                  {{ form.email }}
+                </div>
                 {% if form.email.errors %}
                 <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
                 {% endif %}
               </div>
 
+              <!-- Phone Number -->
               <div class="col-12 col-md-6">
-                <label for="{{ form.phone_number.id_for_label }}" class="form-label fw-semibold">Phone Number</label>
-                {{ form.phone_number }}
+                <label for="{{ form.phone_number.id_for_label }}" class="form-label fw-semibold small text-muted text-uppercase mb-1">
+                  Phone Number
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-tertiary"><i class="bi bi-telephone text-muted"></i></span>
+                  {{ form.phone_number }}
+                </div>
                 {% if form.phone_number.errors %}
                 <div class="text-danger small mt-1">{{ form.phone_number.errors.0 }}</div>
                 {% endif %}
               </div>
 
+              <!-- Role & Account Details -->
               <div class="col-12 col-md-6">
-                <label class="form-label fw-semibold">Account Status</label>
-                <div>
-                  {% if user.is_active %}
-                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Active</span>
-                  {% else %}
-                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Inactive</span>
-                  {% endif %}
+                <label class="form-label fw-semibold small text-muted text-uppercase mb-1">
+                  System Role
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-tertiary"><i class="bi bi-shield text-muted"></i></span>
+                  <input type="text" class="form-control bg-body-secondary" value="{{ user.get_role_display }}" readonly disabled>
+                </div>
+              </div>
+
+              <!-- Last Login -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold small text-muted text-uppercase mb-1">
+                  Last Login
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-tertiary"><i class="bi bi-clock-history text-muted"></i></span>
+                  <input type="text" class="form-control bg-body-secondary" value="{% if user.last_login %}{{ user.last_login|date:'M d, Y H:i' }}{% else %}Never{% endif %}" readonly disabled>
                 </div>
               </div>
             </div>
 
-            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-3 mt-4 pt-3 border-top">
-              <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-secondary py-2">
-                <i class="bi bi-key me-1"></i> Change Password
-              </a>
-              <button type="submit" class="btn btn-primary fw-bold px-4 py-2">
-                <i class="bi bi-save me-1"></i> Save Changes
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+              <button type="submit" class="btn btn-primary fw-bold px-4 py-2 shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100 w-sm-auto">
+                <i class="bi bi-check2-circle fs-5"></i> Save Changes
               </button>
             </div>
           </form>

@@ -28,9 +28,15 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   
   <!-- Custom Design System CSS with cache buster -->
-  <link href="{% static 'css/theme.css' %}?v=20260912_v4" rel="stylesheet">
+  <link href="{% static 'css/theme.css' %}?v=20260915_sticky_v2" rel="stylesheet">
 
   <style>
+    /* Prevent horizontal overflow while ensuring position: sticky works reliably */
+    html, body {
+      overflow-x: clip !important;
+      max-width: 100% !important;
+    }
+
     /* Mobile Sidebar & Drawer - Self-contained for zero cache desync */
     .mobile-hamburger {
       background: transparent;
@@ -307,6 +313,174 @@
       justify-content: center;
       font-size: 1.6rem;
     }
+
+    /* KPI Card Modals - Success (Green) */
+    .kpi-modal-success {
+      background: var(--bg-card, #1E293B) !important;
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08)) !important;
+      border-radius: 18px !important;
+      position: relative;
+      overflow: hidden;
+      background-image: radial-gradient(circle at 85% 15%, rgba(34, 197, 94, 0.14) 0%, transparent 60%),
+                        linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35) !important;
+      backdrop-filter: blur(12px);
+    }
+    [data-theme="light"] .kpi-modal-success,
+    html:not([data-theme="dark"]) .kpi-modal-success {
+      background-color: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      background-image: radial-gradient(circle at 85% 15%, rgba(34, 197, 94, 0.08) 0%, transparent 60%) !important;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12) !important;
+    }
+    .kpi-modal-accent-success {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #22C55E 0%, #4ADE80 60%, transparent 100%);
+      box-shadow: 0 1px 6px rgba(34, 197, 94, 0.4);
+      z-index: 2;
+    }
+    .kpi-icon-badge-success {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: rgba(34, 197, 94, 0.14);
+      color: #4ADE80;
+      border: 1px solid rgba(34, 197, 94, 0.28);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+    }
+
+    /* KPI Card Modals - Purple / Boss */
+    .kpi-modal-purple {
+      background: var(--bg-card, #1E293B) !important;
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08)) !important;
+      border-radius: 18px !important;
+      position: relative;
+      overflow: hidden;
+      background-image: radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.16) 0%, transparent 60%),
+                        linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35) !important;
+      backdrop-filter: blur(12px);
+    }
+    [data-theme="light"] .kpi-modal-purple,
+    html:not([data-theme="dark"]) .kpi-modal-purple {
+      background-color: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      background-image: radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.08) 0%, transparent 60%) !important;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12) !important;
+    }
+    .kpi-modal-accent-purple {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #8B5CF6 0%, #A78BFA 60%, transparent 100%);
+      box-shadow: 0 1px 6px rgba(139, 92, 246, 0.4);
+      z-index: 2;
+    }
+    .kpi-icon-badge-purple {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: rgba(139, 92, 246, 0.14);
+      color: #A78BFA;
+      border: 1px solid rgba(139, 92, 246, 0.28);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+    }
+
+    /* Top Navigation Bar - Sticky Positioning */
+    .navbar-custom {
+      position: -webkit-sticky !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 1030 !important;
+    }
+    @media (max-width: 767.98px) {
+      .navbar-custom {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 1030 !important;
+        padding: 0.45rem 0.65rem !important;
+      }
+      .navbar-custom .container-fluid {
+        flex-wrap: nowrap !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      .navbar-brand-title {
+        margin-right: 0.35rem !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        min-width: 0;
+        flex-shrink: 1;
+        gap: 0.35rem !important;
+      }
+      .navbar-brand-title .brand-logo {
+        height: 30px !important;
+        flex-shrink: 0;
+      }
+      .brand-name-text {
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        white-space: nowrap !important;
+        letter-spacing: -0.01em;
+        line-height: 1;
+      }
+      .mobile-hamburger {
+        width: 36px !important;
+        height: 36px !important;
+      }
+      .theme-toggle-btn {
+        width: 36px !important;
+        height: 36px !important;
+      }
+      .nav-notif-btn {
+        padding: 4px 6px !important;
+      }
+      .notification-dropdown-menu {
+        position: fixed !important;
+        top: 56px !important;
+        right: 12px !important;
+        left: auto !important;
+        transform: none !important;
+        width: min(340px, calc(100vw - 24px)) !important;
+        max-width: calc(100vw - 24px) !important;
+        z-index: 1050 !important;
+      }
+    }
+    @media (max-width: 380px) {
+      .navbar-custom {
+        padding: 0.4rem 0.45rem !important;
+      }
+      .brand-name-text {
+        font-size: 0.95rem !important;
+      }
+      .navbar-brand-title .brand-logo {
+        height: 27px !important;
+      }
+      .mobile-hamburger {
+        width: 33px !important;
+        height: 33px !important;
+      }
+      .theme-toggle-btn {
+        width: 33px !important;
+        height: 33px !important;
+      }
+      .nav-notif-btn {
+        padding: 3px 4px !important;
+      }
+    }
   </style>
   
   <!-- Early Theme Script to prevent flash -->
@@ -400,12 +574,12 @@
   <!-- ═══════════════════════════════════════════════════
        TOP NAVIGATION BAR
   ═══════════════════════════════════════════════════ -->
-  <nav class="navbar navbar-custom">
-    <div class="container-fluid">
+  <nav class="navbar navbar-custom sticky-top">
+    <div class="container-fluid flex-nowrap align-items-center">
       <!-- Left: Logo & Brand -->
-      <a class="navbar-brand navbar-brand-title d-flex align-items-center" href="{% url 'dashboard:index' %}">
-        <img src="{% static 'img/logo.png' %}" alt="Logo" class="brand-logo me-2" style="height: 38px; width: auto; object-fit: contain;">
-        <span>Gemini Insights</span>
+      <a class="navbar-brand navbar-brand-title d-flex align-items-center me-auto text-decoration-none" href="{% url 'dashboard:index' %}">
+        <img src="{% static 'img/logo.png' %}" alt="Logo" class="brand-logo" style="height: 38px; width: auto; object-fit: contain;">
+        <span class="brand-name-text ms-1 ms-sm-2">Gemini Insights</span>
       </a>
 
       <!-- Center: Desktop nav links -->
@@ -433,7 +607,7 @@
       </ul>
 
       <!-- Right: Utilities -->
-      <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center gap-2 flex-nowrap ms-auto">
         <!-- Desktop tool icon buttons -->
         <div class="d-none d-lg-flex align-items-center gap-2 nav-tools-container">
           {% if not user.is_boss %}

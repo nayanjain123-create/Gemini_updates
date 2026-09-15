@@ -564,11 +564,14 @@
     <div
       class="card-header bg-transparent py-3 px-3 px-md-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
       <div>
-        <h5 class="fw-bold mb-0 text-body"><i class="bi bi-people-fill text-primary me-2"></i> Employee Workload &
-          Performance Scoreboard</h5>
-        <div class="small text-muted">Live view of report submissions and task metrics per employee.</div>
+        <h5 class="fw-bold mb-0 text-body">
+          <i class="bi bi-people-fill text-primary me-2"></i>
+          <span class="d-inline d-md-none">Employee Scoreboard</span>
+          <span class="d-none d-md-inline">Employee Workload & Performance Scoreboard</span>
+        </h5>
+        <div class="small text-muted d-none d-md-block">Live view of report submissions and task metrics per employee.</div>
       </div>
-      <a href="{% url 'reports:daily_report' %}" class="btn btn-sm btn-outline-primary">
+      <a href="{% url 'reports:daily_report' %}" class="btn btn-sm btn-outline-primary d-none d-md-inline-flex">
         <i class="bi bi-grid-3x3 me-1"></i> Full Monthly Matrix
       </a>
     </div>
@@ -578,7 +581,10 @@
           <thead class="table-light">
             <tr>
               <th class="text-center" style="width:28%;">Employee</th>
-              <th style="width:22%;">Today's Report</th>
+              <th style="width:22%;">
+                <span class="d-inline d-md-none">Report</span>
+                <span class="d-none d-md-inline">Today's Report</span>
+              </th>
               <th class="text-center" style="width:16%;">Pending</th>
               <th class="text-center" style="width:18%;">Awaiting</th>
               <th class="text-center" style="width:16%;">Delegated</th>
@@ -651,7 +657,9 @@
       <div class="card card-stat border-0 shadow-sm h-100">
         <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
           <h5 class="fw-bold mb-0 text-body">
-            <i class="bi bi-arrow-left-right text-warning me-2"></i> Live Task Delegation Stream
+            <i class="bi bi-arrow-left-right text-warning me-2"></i>
+            <span class="d-inline d-md-none">Task Delegation</span>
+            <span class="d-none d-md-inline">Live Task Delegation Stream</span>
           </h5>
           <a href="{% url 'reports:task_list' %}" class="btn btn-sm btn-outline-secondary">View More</a>
         </div>
@@ -684,7 +692,9 @@
       <div class="card card-stat border-0 shadow-sm h-100">
         <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
           <h5 class="fw-bold mb-0 text-body">
-            <i class="bi bi-activity text-primary me-2"></i> Recent Workflow Audit
+            <i class="bi bi-activity text-primary me-2"></i>
+            <span class="d-inline d-md-none">Workflow Audit</span>
+            <span class="d-none d-md-inline">Recent Workflow Audit</span>
           </h5>
           <a href="{% url 'audit:audit_log_list' %}" class="btn btn-sm btn-outline-secondary">All Logs</a>
         </div>
@@ -911,12 +921,10 @@
               <strong>Boss Feedback:</strong> "{{ task.boss_remark }}"
             </div>
             <div class="d-flex gap-2">
-              <form method="post" action="{% url 'reports:task_mark_complete' task.id %}" class="flex-grow-1">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-success fw-bold w-100">
-                  <i class="bi bi-check2-circle me-1"></i> Resolve & Re-submit
-                </button>
-              </form>
+              <button type="button" class="btn btn-sm btn-success fw-bold flex-grow-1"
+                      onclick="showMarkCompleteModal('{% url 'reports:task_mark_complete' task.id %}', '{{ task.title|escapejs }}')">
+                <i class="bi bi-check2-circle me-1"></i> Resolve & Re-submit
+              </button>
               <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
                 data-bs-target="#empReallocModal_{{ task.id }}">
                 <i class="bi bi-arrow-left-right me-1"></i> Delegate
@@ -974,7 +982,9 @@
   <div class="card card-stat border-0 shadow-sm mb-4">
     <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
       <h5 class="fw-bold mb-0 text-body">
-        <i class="bi bi-list-task text-primary me-2"></i> Your Current Assigned Tasks
+        <i class="bi bi-list-task text-primary me-2"></i>
+        <span class="d-inline d-md-none">Your Tasks</span>
+        <span class="d-none d-md-inline">Your Current Assigned Tasks</span>
       </h5>
       <a href="{% url 'reports:task_list' %}" class="btn btn-sm btn-outline-primary">View All Tasks</a>
     </div>
@@ -1012,12 +1022,10 @@
               <span class="badge badge-completed w-100 p-2"><i class="bi bi-check-all me-1"></i> Approved</span>
               {% else %}
               <div class="d-flex gap-2">
-                <form method="post" action="{% url 'reports:task_mark_complete' task.id %}" class="flex-grow-1">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-sm btn-success fw-bold w-100">
-                    <i class="bi bi-check2-circle me-1"></i> Mark Done
-                  </button>
-                </form>
+                <button type="button" class="btn btn-sm btn-success fw-bold flex-grow-1"
+                        onclick="showMarkCompleteModal('{% url 'reports:task_mark_complete' task.id %}', '{{ task.title|escapejs }}')">
+                  <i class="bi bi-check2-circle me-1"></i> Mark Done
+                </button>
                 <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
                   data-bs-target="#empReallocCardModal_{{ task.id }}" title="Delegate to Colleague">
                   <i class="bi bi-arrow-left-right"></i>
@@ -1083,17 +1091,19 @@
     <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
       <div>
         <h5 class="fw-bold mb-0 text-body">
-          <i class="bi bi-activity text-primary me-2"></i> Team Activity & Accomplishments
+          <i class="bi bi-activity text-primary me-2"></i>
+          <span class="d-inline d-md-none">Team Activity</span>
+          <span class="d-none d-md-inline">Team Activity & Accomplishments</span>
         </h5>
-        <div class="small text-muted mt-1">Live updates on daily task submissions, compliance completions, and approved
-          tasks</div>
+        <div class="small text-muted mt-1 d-none d-md-block">Live updates on daily task submissions, compliance completions, and approved tasks</div>
       </div>
       <a href="{% url 'audit:audit_log_list' %}" class="btn btn-sm btn-outline-primary">
         All Activity <i class="bi bi-arrow-right ms-1"></i>
       </a>
     </div>
     <div class="card-body p-0" style="max-height: 440px; overflow-y: auto;">
-      <div class="table-responsive">
+      <!-- Desktop Table View -->
+      <div class="table-responsive d-none d-md-block">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
             <tr>
@@ -1168,6 +1178,72 @@
             {% endfor %}
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile Team Activity Stream (Hidden on Desktop, No Horizontal Scroll) -->
+      <div class="d-block d-md-none p-2">
+        {% for log in team_activity_logs %}
+        <div class="p-3 mb-2 rounded border bg-body-tertiary">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center">
+              <span class="avatar-circle me-2"
+                style="width: 28px; height: 28px; font-size: 0.75rem; background: var(--primary); color: #fff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
+                {{ log.user.username|make_list|first|upper|default:"?" }}
+              </span>
+              <span class="fw-bold small text-body">{{ log.user.full_name|default:log.user.username|default:"Team" }}</span>
+            </div>
+            <span class="small text-muted" style="font-size: 0.75rem;">
+              <i class="bi bi-clock me-1 opacity-75"></i>{{ log.created_at|date:"M d, H:i" }}
+            </span>
+          </div>
+
+          <div class="mb-2">
+            {% if log.action == 'DAILY_TASK_CREATED' or log.action == 'DAILY_TASK_UPDATED' %}
+            <span class="badge bg-primary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+              <i class="bi bi-journal-check me-1"></i> Daily Report
+            </span>
+            {% elif log.action == 'COMPLIANCE_MARKED_DONE' or log.action == 'COMPLIANCE_ITEM_COMPLETED' %}
+            <span class="badge bg-success text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+              <i class="bi bi-shield-check me-1"></i> Compliance Done
+            </span>
+            {% elif log.action == 'COMPLIANCE_MARKED_NA' %}
+            <span class="badge bg-secondary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+              <i class="bi bi-slash-circle me-1"></i> Compliance N/A
+            </span>
+            {% elif log.action == 'TASK_APPROVED' %}
+            <span class="badge text-white py-1 px-2 fw-semibold shadow-sm"
+              style="font-size: 0.78rem; background-color: #8B5CF6 !important;">
+              <i class="bi bi-trophy-fill me-1"></i> Approved by Boss
+            </span>
+            {% elif log.action == 'TASK_MARKED_COMPLETED' %}
+            <span class="badge bg-info text-dark py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+              <i class="bi bi-hourglass-split me-1"></i> Waiting Approval
+            </span>
+            {% elif log.action == 'TASK_REALLOCATED' %}
+            <span class="badge bg-warning text-dark py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+              <i class="bi bi-arrow-left-right me-1"></i> Delegated
+            </span>
+            {% elif log.action == 'ASSIGNED_TASK_CREATED' %}
+            <span class="badge bg-primary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+              <i class="bi bi-plus-circle me-1"></i> Task Allocated
+            </span>
+            {% else %}
+            <span class="badge bg-secondary text-white py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+              {{ log.action|cut:"_"|title }}
+            </span>
+            {% endif %}
+          </div>
+
+          <div class="small text-body">
+            {{ log.details|default:"—" }}
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-activity fs-3 d-block mb-1 opacity-50"></i>
+          No recent team activity recorded yet.
+        </div>
+        {% endfor %}
       </div>
     </div>
   </div>
@@ -1416,4 +1492,47 @@
   })();
 </script>
 {% endif %}
+
+<!-- Mark Completed Confirmation Modal (KPI Card Style) -->
+<div class="modal fade" id="markCompleteConfirmModal" tabindex="-1" aria-labelledby="markCompleteConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 390px;">
+    <div class="modal-content kpi-modal-success border-0">
+      <div class="kpi-modal-accent-success"></div>
+      <div class="modal-body p-4 text-center">
+        <div class="kpi-icon-badge-success mb-3">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <h4 class="fw-bold mb-2" id="markCompleteConfirmModalLabel">Submit for Approval</h4>
+        <p class="text-muted small mb-4">
+          Are you sure you want to mark task <strong id="markCompleteModalTitle" class="text-body"></strong> as completed? It will be submitted to your boss for final review.
+        </p>
+        <form id="markCompleteConfirmForm" method="post" action="">
+          {% csrf_token %}
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-secondary px-3 py-2 fw-semibold rounded-3 flex-grow-1" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-success px-3 py-2 fw-bold rounded-3 shadow-sm flex-grow-1 d-inline-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-check2-circle"></i> Submit Done
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showMarkCompleteModal(actionUrl, taskTitle) {
+  const form = document.getElementById('markCompleteConfirmForm');
+  const titleSpan = document.getElementById('markCompleteModalTitle');
+  if (form) form.action = actionUrl;
+  if (titleSpan) titleSpan.textContent = taskTitle ? '"' + taskTitle + '"' : 'this task';
+  const modalEl = document.getElementById('markCompleteConfirmModal');
+  if (modalEl) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
+}
+</script>
 {% endblock %}

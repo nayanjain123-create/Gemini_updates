@@ -116,7 +116,7 @@ def profile_view(request):
             user = form.save()
             log_action(user, 'PROFILE_UPDATED', 'User', user.id, "Updated profile information.")
             messages.success(request, "Your profile details have been updated successfully.")
-            return redirect('accounts:profile')
+            return redirect('dashboard:index')
     else:
         form = ProfileEditForm(instance=request.user)
 
@@ -200,7 +200,7 @@ def employee_create_view(request):
     else:
         form = UserCreateForm()
 
-    return render(request, 'accounts/employee_form.html', {'form': form, 'title': 'Add New Employee'})
+    return render(request, 'accounts/employee_form.html', {'form': form, 'title': 'Employee'})
 
 @login_required
 @boss_required
