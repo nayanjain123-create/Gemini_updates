@@ -276,13 +276,13 @@
 
   <!-- Mobile Header Banner -->
   <div class="d-flex d-md-none align-items-center justify-content-between mb-3">
-    <h2 class="fw-bold mb-0">Assign Task</h2>
     {% if user.is_boss %}
+    <h2 class="fw-bold mb-0"><i class="bi bi-clipboard-plus me-2 text-primary"></i>Assign Task</h2>
     <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3 py-1.5 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#assignTaskModal">
       <i class="bi bi-plus-lg"></i> Task
     </button>
-    {% elif not user.is_boss %}
-    <span class="text-muted small">My Tasks</span>
+    {% else %}
+    <h2 class="fw-bold mb-0"><i class="bi bi-list-check me-2 text-primary"></i>My Tasks</h2>
     {% endif %}
   </div>
 
@@ -377,57 +377,60 @@
   <!-- Search & Filter Bar -->
   <div class="card card-stat border-0 shadow-sm mb-4">
     <div class="card-body p-2 p-md-3">
-      <form method="get" id="taskFilterForm" class="d-flex flex-nowrap align-items-center gap-2 overflow-x-auto filter-scroll-row">
-        <!-- Search Input (Desktop Only) -->
-        <div class="flex-grow-1 d-none d-md-block" style="min-width: 160px;">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" class="form-control" placeholder="Search tasks..." value="{{ q_search }}" onchange="document.getElementById('taskFilterForm').submit()">
+      <form method="get" id="taskFilterForm">
+        <!-- Single-line filter bar for both mobile & desktop -->
+        <div class="d-flex flex-nowrap align-items-center gap-1 gap-md-2">
+          <!-- Search Input (Desktop Only) -->
+          <div class="flex-grow-1 d-none d-md-block" style="min-width: 160px;">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" name="q" class="form-control" placeholder="Search tasks..." value="{{ q_search }}" onchange="document.getElementById('taskFilterForm').submit()">
+            </div>
           </div>
-        </div>
 
-        <!-- Status Filter (Mobile & Desktop) -->
-        <div class="flex-grow-1 flex-md-grow-0" style="min-width: 130px;">
-          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="">All Statuses</option>
-            {% for code, label in status_choices %}
-            {% if code != 'IN_PROGRESS' %}
-            <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
-            {% endif %}
-            {% endfor %}
-          </select>
-        </div>
+          <!-- Status Filter (Mobile & Desktop) -->
+          <div class="flex-grow-1" style="min-width: 0; max-width: 200px;">
+            <select name="status" class="form-select form-select-sm text-truncate" onchange="this.form.submit()">
+              <option value="">All Statuses</option>
+              {% for code, label in status_choices %}
+              {% if code != 'IN_PROGRESS' %}
+              <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </div>
 
-        <!-- Priority Filter (Desktop Only) -->
-        <div class="d-none d-md-block" style="min-width: 125px; flex-shrink: 0;">
-          <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="">All Priorities</option>
-            {% for code, label in priority_choices %}
-            <option value="{{ code }}" {% if priority_filter == code %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+          <!-- Priority Filter (Desktop Only) -->
+          <div class="d-none d-md-block" style="min-width: 125px; flex-shrink: 0;">
+            <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">All Priorities</option>
+              {% for code, label in priority_choices %}
+              <option value="{{ code }}" {% if priority_filter == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
 
-        {% if user.is_boss %}
-        <!-- Assignee Filter (Mobile & Desktop) -->
-        <div class="flex-grow-1 flex-md-grow-0" style="min-width: 130px;">
-          <select name="employee" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="">All Assignees</option>
-            {% for emp in active_employees %}
-            <option value="{{ emp.id }}" {% if emp_filter == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.full_name|default:emp.username }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        {% endif %}
+          {% if user.is_boss %}
+          <!-- Assignee Filter (Mobile & Desktop) -->
+          <div class="flex-grow-1" style="min-width: 0; max-width: 200px;">
+            <select name="employee" class="form-select form-select-sm text-truncate" onchange="this.form.submit()">
+              <option value="">All Assignees</option>
+              {% for emp in active_employees %}
+              <option value="{{ emp.id }}" {% if emp_filter == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.full_name|default:emp.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
 
-        {% if q_search or status_filter or priority_filter or emp_filter or reallocated_filter %}
-        <!-- Clear Button -->
-        <div class="flex-shrink-0">
-          <a href="{% url 'reports:task_list' %}" class="btn btn-outline-danger btn-sm px-2.5 text-nowrap d-inline-flex align-items-center justify-content-center" title="Clear Filters">
-            <i class="bi bi-x-circle"></i><span class="d-none d-md-inline ms-1">Clear</span>
-          </a>
+          {% if q_search or status_filter or priority_filter or emp_filter or reallocated_filter %}
+          <!-- Clear Button (Icon only, strictly one line) -->
+          <div class="flex-shrink-0">
+            <a href="{% url 'reports:task_list' %}" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 31px; padding: 0;" title="Clear Filters" aria-label="Clear Filters">
+              <i class="bi bi-x-circle"></i>
+            </a>
+          </div>
+          {% endif %}
         </div>
-        {% endif %}
       </form>
     </div>
   </div>
@@ -811,7 +814,7 @@
 
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold">Due Date (Optional)</label>
-              <input type="date" name="due_date" class="form-control">
+              <input type="date" name="due_date" class="form-control" min="{{ today|date:'Y-m-d' }}">
             </div>
           </div>
 

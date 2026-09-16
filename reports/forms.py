@@ -1,5 +1,7 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from accounts.models import User
+from gemini_updates.date_utils import get_current_date
 from .models import DailyTaskReport, DailyTaskComment, AssignedTask
 
 class DailyTaskForm(forms.ModelForm):
@@ -34,6 +36,16 @@ class AssignedTaskForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Limit assigned_to choices to active employees
         self.fields['assigned_to'].queryset = User.objects.filter(is_active=True).order_by('full_name', 'username')
+        today = get_current_date()
+        self.fields['due_date'].widget.attrs['min'] = today.strftime('%Y-%m-%d')
+
+    def clean_due_date(self):
+        due_date = self.cleaned_data.get('due_date')
+        if due_date:
+            today = get_current_date()
+            if due_date < today:
+                raise ValidationError("Due date cannot be in the past. Please select today or a future date.")
+        return due_date
 
 class AssignedTaskStatusForm(forms.ModelForm):
     class Meta:

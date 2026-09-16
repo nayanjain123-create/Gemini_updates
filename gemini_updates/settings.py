@@ -119,3 +119,7 @@ LOGOUT_REDIRECT_URL = 'accounts:login'
 
 # Email Backend (Console for local dev & password reset demo)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# System Current Date Override (Set to None to use actual real-world system date)
+CURRENT_DATE_OVERRIDE = None
+

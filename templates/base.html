@@ -1,10 +1,22 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<!-- Theme applied synchronously to eliminate FOUC on refresh -->
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Gemini Insights{% endblock %} - Work Tracking & Compliance Portal</title>
+  <title>{% block title %}Gemini Insights{% endblock %} - Work Tracking &amp; Compliance Portal</title>
+  <!-- Zero-latency theme init: runs synchronously before any CSS paint to eliminate FOUC -->
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('gemini_updates_theme');
+        var preferred = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+        document.documentElement.setAttribute('data-bs-theme', preferred);
+      } catch(e) {}
+    })();
+  </script>
   
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,6 +47,14 @@
     html, body {
       overflow-x: clip !important;
       max-width: 100% !important;
+    }
+
+    /* Live notification badge pulse animation */
+    @keyframes geminiPulseBadge {
+      0%   { transform: translate(-50%, -50%) scale(1); }
+      40%  { transform: translate(-50%, -50%) scale(1.45); }
+      70%  { transform: translate(-50%, -50%) scale(0.9); }
+      100% { transform: translate(-50%, -50%) scale(1); }
     }
 
     /* Mobile Sidebar & Drawer - Self-contained for zero cache desync */
@@ -636,13 +656,13 @@
         <div class="dropdown">
           <button class="nav-notif-btn position-relative" type="button" id="mobileNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
             <i class="bi bi-bell-fill fs-5 text-secondary"></i>
-            {% if unread_notifications_count > 0 %}
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
-              {{ unread_notifications_count }}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light gemini-notif-badge"
+                  {% if not unread_notifications_count or unread_notifications_count == 0 %}style="display:none;"{% endif %}>
+              {{ unread_notifications_count|default:0 }}
               <span class="visually-hidden">unread notifications</span>
             </span>
-            {% endif %}
           </button>
+
           <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 notification-dropdown-menu" aria-labelledby="mobileNotifDropdown" style="width: 320px; max-width: 92vw; max-height: 420px; overflow-y: auto;">
             <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
               <span class="fw-bold fs-6"><i class="bi bi-bell me-1 text-primary"></i> Notifications</span>
@@ -822,35 +842,148 @@
 
       {% if user.is_authenticated %}
       // ── 2. Request Notification Permission ─────────────────────────────────
-      // We ask once and quietly – the browser only shows the prompt if the user
-      // hasn't decided yet. If they already granted/denied, nothing happens.
       function requestBrowserNotificationPermission() {
-        if (!('Notification' in window)) return;
+        if (!('Notification' in window)) {
+          // No OS notification support – still start in-app polling
+          startNotificationPolling();
+          return;
+        }
         if (Notification.permission === 'granted') {
           startNotificationPolling();
           return;
         }
-        if (Notification.permission === 'denied') return;
-
-        // Show a soft prompt after 3 s to let the page load first
+        if (Notification.permission === 'denied') {
+          // Still do in-app polling even without OS permission
+          startNotificationPolling();
+          return;
+        }
+        // Show a soft prompt after 3s, then always start in-app polling regardless
         setTimeout(function() {
-          Notification.requestPermission().then(function(permission) {
-            if (permission === 'granted') {
-              console.log('[Notif] Browser notifications granted.');
-              startNotificationPolling();
-            }
-          });
+          Notification.requestPermission().then(function() {
+            startNotificationPolling();
+          }).catch(function() { startNotificationPolling(); });
         }, 3000);
       }
 
-      // ── 3. Poll for New Notifications & Fire Browser Push via SW ───────────
+      // ── 3. Real-time Notification Polling (In-App + OS Push) ───────────────
       let _lastSeenNotifId = null;
       let _pollingIntervalId = null;
+      let _initUnreadCount = {{ unread_notifications_count|default:0 }};
+
+      // Inject real-time in-app toast container (top-right, non-blocking)
+      (function createToastContainer() {
+        if (document.getElementById('gemini-toast-container')) return;
+        const el = document.createElement('div');
+        el.id = 'gemini-toast-container';
+        el.style.cssText = 'position:fixed;top:70px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:340px;pointer-events:none;';
+        document.body.appendChild(el);
+      })();
+
+      function showInAppToast(notif) {
+        const container = document.getElementById('gemini-toast-container');
+        if (!container) return;
+
+        const iconMap = {
+          'TASK_ASSIGNED': '<i class="bi bi-plus-circle-fill text-primary"></i>',
+          'TASK_APPROVED': '<i class="bi bi-trophy-fill text-success"></i>',
+          'TASK_COMPLETED_WAITING_APPROVAL': '<i class="bi bi-hourglass-split text-info"></i>',
+          'TASK_REVISION_REQUESTED': '<i class="bi bi-exclamation-octagon-fill text-danger"></i>',
+          'TASK_REALLOCATED': '<i class="bi bi-arrow-left-right text-warning"></i>',
+        };
+        const icon = iconMap[notif.notification_type] || '<i class="bi bi-bell-fill text-primary"></i>';
+
+        const toast = document.createElement('div');
+        toast.style.cssText = [
+          'background: var(--bg-card, #1E293B)',
+          'border: 1px solid var(--border-color, rgba(255,255,255,0.1))',
+          'border-radius: 12px',
+          'padding: 12px 14px',
+          'box-shadow: 0 8px 32px rgba(0,0,0,0.35)',
+          'pointer-events: all',
+          'cursor: pointer',
+          'transform: translateX(120%)',
+          'transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease',
+          'opacity: 0',
+          'display: flex',
+          'align-items: flex-start',
+          'gap: 10px',
+          'max-width: 340px',
+          'width: 100%',
+        ].join(';');
+
+        toast.innerHTML = `
+          <div style="font-size:1.3rem;flex-shrink:0;margin-top:1px;">${icon}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.83rem;font-weight:700;color:var(--text-main,#F1F5F9);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${notif.title || 'New Notification'}</div>
+            <div style="font-size:0.76rem;color:var(--text-muted,#94A3B8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${notif.message || ''}</div>
+          </div>
+          <button onclick="this.closest('[id]')?.remove()" style="background:none;border:none;color:var(--text-muted,#94A3B8);cursor:pointer;font-size:0.9rem;padding:0 2px;flex-shrink:0;line-height:1;" title="Dismiss">&#x2715;</button>
+        `;
+        toast.addEventListener('click', function(e) {
+          if (e.target.tagName !== 'BUTTON') {
+            window.location.href = '/reports/tasks/';
+          }
+        });
+
+        container.appendChild(toast);
+        // Animate in
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
+          });
+        });
+        // Auto-dismiss after 7 seconds
+        setTimeout(function() {
+          toast.style.transform = 'translateX(120%)';
+          toast.style.opacity = '0';
+          setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+        }, 7000);
+      }
+
+      function playChime() {
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          const ctx = new AudioCtx();
+          const notes = [523.25, 659.25, 783.99]; // C5-E5-G5 major chord arpeggio
+          notes.forEach(function(freq, i) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.10);
+            gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.10);
+            gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + i * 0.10 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.10 + 0.45);
+            osc.start(ctx.currentTime + i * 0.10);
+            osc.stop(ctx.currentTime + i * 0.10 + 0.5);
+          });
+        } catch(e) {}
+      }
+
+      function updateBadgeLive(count) {
+        // Update all notification badge elements in nav
+        const badges = document.querySelectorAll('.gemini-notif-badge');
+        badges.forEach(function(badge) {
+          if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = '';
+            // Pulse animation
+            badge.style.animation = 'none';
+            badge.offsetHeight; // reflow
+            badge.style.animation = 'geminiPulseBadge 0.5s ease';
+          } else {
+            badge.style.display = 'none';
+          }
+        });
+      }
 
       function startNotificationPolling() {
         if (_pollingIntervalId) return; // already running
-        // Poll every 30 seconds
-        _pollingIntervalId = setInterval(pollForNewNotifications, 30000);
+        // Poll every 12 seconds for near-real-time experience
+        _pollingIntervalId = setInterval(pollForNewNotifications, 12000);
         // Also run immediately once
         pollForNewNotifications();
       }
@@ -862,18 +995,29 @@
         })
         .then(function(res) { return res.ok ? res.json() : null; })
         .then(function(data) {
-          if (!data || !data.latest) return;
+          if (!data) return;
+
+          // Always update the live badge count
+          updateBadgeLive(data.unread_count || 0);
+
+          if (!data.latest) return;
           const notif = data.latest;
           // Only fire if this is a brand-new notification we haven't shown yet
           if (_lastSeenNotifId === notif.id) return;
           _lastSeenNotifId = notif.id;
+
+          // Show in-app toast (always, regardless of OS notification permission)
+          showInAppToast(notif);
+          // Play audio chime
+          playChime();
+          // Fire OS notification if permission granted
           fireBrowserNotification(notif);
         })
         .catch(function() { /* silently ignore network errors */ });
       }
 
       function fireBrowserNotification(notif) {
-        if (Notification.permission !== 'granted') return;
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
         const icon = '/static/pwa/icons/icon-192x192.png';
         const badge = '/static/pwa/icons/favicon-32x32.png';
@@ -887,10 +1031,9 @@
             icon: icon,
             badge: badge,
             tag: 'gemini-notif-' + notif.id,
-            url: '/tasks/'
+            url: '/reports/tasks/'
           });
         } else {
-          // Fallback: direct Notification API (visible only when tab is active/focused)
           try {
             new Notification('Gemini Insights', {
               body: notif.title,
@@ -906,10 +1049,15 @@
       }
 
       // Expose so other scripts can start polling immediately if needed
-      window.geminiStartNotifPolling = function() {
-        if (Notification.permission === 'granted') startNotificationPolling();
-      };
+      window.geminiStartNotifPolling = function() { startNotificationPolling(); };
+
+      // Always start in-app polling immediately for authenticated users
+      // (independent of OS notification permission)
+      document.addEventListener('DOMContentLoaded', function() {
+        startNotificationPolling();
+      });
       {% endif %}
+
     })();
   </script>
 

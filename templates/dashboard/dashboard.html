@@ -319,55 +319,54 @@
 
   <!-- Header Banner -->
   <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 gap-2 flex-wrap">
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-      <h2 class="fw-bold mb-0 fs-4 fs-md-2">Welcome, {{ user.full_name|default:user.username }}!</h2>
+    <!-- Welcome section: order-2 on mobile (below tax alert), order-lg-1 on desktop (left side) -->
+    <div class="d-flex align-items-center gap-2 flex-wrap order-2 order-lg-1">
+      <h2 class="fw-bold mb-0 fs-4 fs-md-2">Welcome, {{ user.username|capfirst }}!</h2>
       <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %}">
         {{ user.get_role_display }}
       </span>
-      {% if not user.is_boss %}
-      <p class="text-muted mb-0 d-none d-lg-inline ms-2">
-        &bull; Employee Workspace &bull; {{ today|date:"l, F d, Y" }}
-      </p>
-      {% endif %}
     </div>
 
-    <div class="d-flex align-items-center gap-2 ms-auto">
-      {% if user.is_boss %}
-      <button class="btn btn-primary fw-bold shadow-sm d-flex align-items-center gap-2 btn-sm px-2 px-sm-3 py-1 py-sm-2" data-bs-toggle="modal"
-        data-bs-target="#assignTaskModalDashboard">
-        <i class="bi bi-plus-circle me-1"></i>
-        <span class="d-none d-sm-inline">Allocate Task</span>
-        <span class="d-inline d-sm-none">Task</span>
-      </button>
-      {% elif urgent_statutory_deadlines %}
+    <!-- Tax alert & Action buttons: order-1 on mobile (ABOVE Welcome line), order-lg-2 on desktop (right side) -->
+    <div class="d-flex align-items-center gap-2 w-100 w-lg-auto ms-lg-auto flex-wrap order-1 order-lg-2 mb-2 mb-lg-0">
+      {% if urgent_statutory_deadlines %}
       {% for deadline in urgent_statutory_deadlines %}
-      <div class="card border-0 shadow-sm px-3 py-2 tax-countdown-card tax-countdown-{{ deadline.color_phase }}"
+      <div class="card border-0 shadow-sm px-3 py-2 tax-countdown-card tax-countdown-{{ deadline.color_phase }} w-100"
         id="taxCountdownCard_{{ deadline.short_name|slugify }}" data-target="{{ deadline.target_iso }}"
-        style="min-width: 270px; max-width: 420px; outline: 2pt solid #EF4444 !important;">
-        <div class="d-flex align-items-center justify-content-between gap-3">
-          <div>
-            <div class="d-flex align-items-center gap-2">
-              <span class="fw-bold text-body" style="font-size: 0.95rem;">{{ deadline.short_name }}</span>
-              <span class="badge bg-secondary-subtle text-secondary border small" style="font-size: 0.7rem;">Due: {{ deadline.due_date|date:"M d, Y" }}</span>
+        style="outline: 2pt solid #EF4444 !important;">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div style="min-width: 0; flex: 1 1 auto;">
+            <div class="d-flex align-items-center gap-1 gap-sm-2 flex-nowrap">
+              <span class="fw-bold text-body" style="font-size: 0.95rem; white-space: nowrap;">{{ deadline.short_name }}</span>
+              <span class="badge bg-secondary-subtle text-secondary border small text-nowrap" style="font-size: 0.70rem;">Due: {{ deadline.due_date|date:"M d, Y" }}</span>
             </div>
-            <div class="text-muted small text-truncate mt-1" style="max-width: 210px; font-size: 0.75rem;"
+            <div class="text-muted small text-truncate mt-1" style="font-size: 0.75rem;"
               title="{{ deadline.pending_companies|join:', ' }}">
               <i class="bi bi-building me-1 text-primary"></i>{{ deadline.pending_companies|join:", " }}
             </div>
           </div>
-          <div class="text-end">
+          <div class="text-end flex-shrink-0 ms-2" style="min-width: 110px;">
             <div class="countdown-clock fw-bold" id="cntTime_{{ deadline.short_name|slugify }}"
-              style="font-family: 'SFMono-Regular', Consolas, monospace; font-size: 1.15rem; letter-spacing: 0.5px;">
+              style="font-family: 'SFMono-Regular', Consolas, monospace; font-size: 1.15rem; letter-spacing: 0.5px; white-space: nowrap;">
               --:--:--
             </div>
-            <span class="badge phase-badge mt-1" id="badgePhase_{{ deadline.short_name|slugify }}"
-              style="font-size: 0.68rem;">
+            <span class="badge phase-badge mt-1 text-nowrap" id="badgePhase_{{ deadline.short_name|slugify }}"
+              style="font-size: 0.70rem;">
               {{ deadline.phase_label }}
             </span>
           </div>
         </div>
       </div>
       {% endfor %}
+      {% endif %}
+
+      {% if user.is_boss %}
+      <button class="btn btn-primary fw-bold shadow-sm d-flex align-items-center gap-2 btn-sm px-2 px-sm-3 py-1 py-sm-2 ms-auto ms-lg-0" data-bs-toggle="modal"
+        data-bs-target="#assignTaskModalDashboard">
+        <i class="bi bi-plus-circle me-1"></i>
+        <span class="d-none d-sm-inline">Allocate Task</span>
+        <span class="d-inline d-sm-none">Task</span>
+      </button>
       {% endif %}
     </div>
   </div>
@@ -774,7 +773,7 @@
 
               <div class="col-12 col-sm-6">
                 <label class="form-label fw-semibold">Due Date (Optional)</label>
-                <input type="date" name="due_date" class="form-control">
+                <input type="date" name="due_date" class="form-control" min="{{ today_iso|default:today|date:'Y-m-d' }}">
               </div>
             </div>
 
@@ -1431,15 +1430,20 @@
 </script>
 {% endif %}
 
-{% if role == 'EMPLOYEE' %}
 <script>
   // Live Statutory Tax Deadlines Countdown for Beside-Welcome Card
   (function () {
     const cards = document.querySelectorAll('.tax-countdown-card');
     if (!cards.length) return;
 
+    const serverNowBase = {% if current_now_iso %}new Date("{{ current_now_iso }}").getTime(){% else %}new Date().getTime(){% endif %};
+    const clientStart = new Date().getTime();
+    function getCurrentNow() {
+      return serverNowBase + (new Date().getTime() - clientStart);
+    }
+
     function updateCountdowns() {
-      const now = new Date().getTime();
+      const now = getCurrentNow();
 
       cards.forEach(card => {
         const targetStr = card.getAttribute('data-target');
@@ -1491,7 +1495,6 @@
     setInterval(updateCountdowns, 1000);
   })();
 </script>
-{% endif %}
 
 <!-- Mark Completed Confirmation Modal (KPI Card Style) -->
 <div class="modal fade" id="markCompleteConfirmModal" tabindex="-1" aria-labelledby="markCompleteConfirmModalLabel" aria-hidden="true">

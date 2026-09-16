@@ -49,7 +49,7 @@
   <!-- Top Header & Actions -->
   <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
     <div>
-      <h2 class="fw-bold mb-1 fs-4"><i class="bi bi-clipboard-check-fill text-primary me-1 me-md-2"></i> Compliance Report</h2>
+      <h2 class="fw-bold mb-1 fs-4"><i class="bi bi-clipboard-check-fill text-primary me-1 me-md-2"></i><span class="d-md-none">Compliance</span><span class="d-none d-md-inline">Compliance Report</span></h2>
       <p class="text-muted mb-0 d-none d-md-block">Monthly compliance status for companies (Viewing: <strong>{{ month_name }} {{ selected_year }}</strong> compliance)</p>
     </div>
 
@@ -90,7 +90,7 @@
     <table class="table-matrix compliance-matrix">
       <thead>
         <tr>
-          <th class="sticky-col">Company Name</th>
+          <th class="sticky-col">Company</th>
           {% for code, label in type_choices %}
           <th>
             <div class="fs-6 fw-bold">{{ label }}</div>
@@ -121,7 +121,6 @@
           <!-- Company Name -->
           <td class="sticky-col fw-bold">
             <div class="fs-6">{{ row.company_label }}</div>
-            <div class="small text-muted" style="font-size: 0.75rem;">Company Code: {{ row.company_code }}</div>
           </td>
 
           <!-- Compliance Cells -->

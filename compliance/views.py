@@ -12,14 +12,19 @@ from django.core.exceptions import PermissionDenied
 from accounts.models import User
 from accounts.decorators import boss_required
 from audit.utils import log_action
+from gemini_updates.date_utils import get_current_date, get_current_datetime
 from .models import ComplianceItem, ComplianceComment
 from .forms import ComplianceMarkDoneForm, ComplianceCommentForm
 
 def ensure_compliance_items_exist(year, month):
     """Ensure all compliance items exist for given month/year."""
     companies = [c[0] for c in ComplianceItem.COMPANY_CHOICES]
-    types = [ComplianceItem.TDS_PAYMENT, ComplianceItem.GSTR_1, ComplianceItem.GSTR_3B]
-    
+    types = [
+        ComplianceItem.TDS_PAYMENT,
+        ComplianceItem.GSTR_1,
+        ComplianceItem.GSTR_3B,
+    ]
+    # Add quarterly TDS Return based on month
     if month == 6:
         types.append(ComplianceItem.TDS_RETURN_Q1)
     elif month == 9:
@@ -45,7 +50,7 @@ def ensure_compliance_items_exist(year, month):
 
 @login_required
 def compliance_report_view(request, year=None, month=None):
-    today = timezone.now().date()
+    today = get_current_date()
     
     req_year = request.GET.get('year')
     req_month = request.GET.get('month')
@@ -286,7 +291,7 @@ def compliance_mark_done_view(request, item_id):
 
         item.status = ComplianceItem.DONE
         item.completed_by = request.user
-        item.completed_at = timezone.now()
+        item.completed_at = get_current_datetime()
         item.remarks = remarks
         item.save()
 
@@ -328,7 +333,7 @@ def compliance_mark_na_view(request, item_id):
 
         item.status = ComplianceItem.NOT_APPLICABLE
         item.completed_by = request.user
-        item.completed_at = timezone.now()
+        item.completed_at = get_current_datetime()
         item.remarks = remarks
         item.save()
 

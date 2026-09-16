@@ -11,12 +11,13 @@ from django.db.models import Q
 from accounts.models import User
 from accounts.decorators import boss_required
 from audit.utils import log_action
+from gemini_updates.date_utils import get_current_date, get_current_datetime
 from .models import DailyTaskReport, DailyTaskComment, AssignedTask, TaskReallocation, TaskRemark, Notification
 from .forms import DailyTaskForm, DailyTaskCommentForm, AssignedTaskForm, AssignedTaskStatusForm, TaskReallocationForm, TaskRemarkForm
 
 @login_required
 def daily_report_view(request, year=None, month=None):
-    today = timezone.now().date()
+    today = get_current_date()
     
     # Handle month/year params (from URL kwargs or GET query params from dropdown)
     get_year = request.GET.get('year')
@@ -284,7 +285,7 @@ def daily_task_comment_add(request, task_id):
 @boss_required
 def missing_daily_reports_view(request):
     """Boss-only view to identify employees who haven't submitted daily tasks."""
-    today = timezone.now().date()
+    today = get_current_date()
     selected_year = int(request.GET.get('year', today.year))
     selected_month = int(request.GET.get('month', today.month))
 
@@ -327,6 +328,7 @@ def missing_daily_reports_view(request):
 @login_required
 def task_list_view(request):
     """Assigned Tasks tab: Boss assigns tasks with priority; Employees view, reallocate, mark completed, or boss approves/remarks."""
+    today = get_current_date()
     if request.user.is_boss:
         tasks = AssignedTask.objects.select_related(
             'assigned_by', 'assigned_to', 'original_assigned_to'
@@ -335,8 +337,9 @@ def task_list_view(request):
         tasks = AssignedTask.objects.select_related(
             'assigned_by', 'assigned_to', 'original_assigned_to'
         ).prefetch_related('reallocations', 'reallocations__reallocated_by', 'reallocations__reallocated_to', 'remarks', 'remarks__boss').filter(
-            Q(assigned_to=request.user) | Q(original_assigned_to=request.user) | Q(status=AssignedTask.APPROVED)
+            Q(assigned_to=request.user) | Q(original_assigned_to=request.user)
         )
+
 
     # Filter parameters
     status_filter = request.GET.get('status', '').strip()
@@ -368,6 +371,7 @@ def task_list_view(request):
     reallocated_count = tasks.filter(is_reallocated=True).count()
 
     context = {
+        'today': today,
         'tasks': tasks,
         'form': form,
         'active_employees': active_employees,
@@ -420,9 +424,14 @@ def task_create_view(request):
         )
         messages.success(request, f"Task '{task.title}' successfully allocated to {task.assigned_to.full_name or task.assigned_to.username}!")
     else:
-        messages.error(request, "Failed to assign task. Please check form entries.")
+        error_msgs = []
+        for field, errors in form.errors.items():
+            for error in errors:
+                error_msgs.append(error)
+        error_text = ' '.join(error_msgs) if error_msgs else "Please check form entries."
+        messages.error(request, f"Failed to allocate task: {error_text}")
 
-    return redirect('reports:task_list')
+    return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
 
 @login_required
 def task_reallocate_view(request, task_id):
@@ -543,7 +552,7 @@ def task_mark_complete_view(request, task_id):
         raise PermissionDenied("You can only mark tasks assigned to you as completed.")
 
     task.status = AssignedTask.WAITING_APPROVAL
-    task.completed_at = timezone.now()
+    task.completed_at = get_current_datetime()
     task.save()
 
     emp_name = request.user.full_name or request.user.username
@@ -581,7 +590,7 @@ def task_approve_view(request, task_id):
     task = get_object_or_404(AssignedTask, id=task_id)
 
     task.status = AssignedTask.APPROVED
-    task.approved_at = timezone.now()
+    task.approved_at = get_current_datetime()
     task.save()
 
     boss_name = request.user.full_name or request.user.username
@@ -687,6 +696,13 @@ def task_edit_view(request, task_id):
             )
             messages.success(request, f"Assigned task '{updated_task.title}' updated.")
             return redirect('reports:task_list')
+        else:
+            error_msgs = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_msgs.append(error)
+            error_text = ' '.join(error_msgs) if error_msgs else "Please check form entries."
+            messages.error(request, f"Failed to update task: {error_text}")
     else:
         form = AssignedTaskForm(instance=task)
 

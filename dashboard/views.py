@@ -12,10 +12,11 @@ from reports.models import DailyTaskReport, DailyTaskComment, AssignedTask, Task
 from compliance.models import ComplianceItem, ComplianceComment
 from compliance.views import ensure_compliance_items_exist
 from audit.models import AuditLog
+from gemini_updates.date_utils import get_current_date, get_current_datetime
 
 @login_required
 def dashboard_index(request):
-    today = timezone.now().date()
+    today = get_current_date()
     current_year = today.year
     current_month = today.month
 
@@ -32,6 +33,89 @@ def dashboard_index(request):
     completed_compliance_count = monthly_compliance.filter(status=ComplianceItem.DONE).count()
     pending_compliance_count = monthly_compliance.filter(status=ComplianceItem.PENDING).count()
     na_compliance_count = monthly_compliance.filter(status=ComplianceItem.NOT_APPLICABLE).count()
+
+    today_iso = today.strftime('%Y-%m-%d')
+    current_now = get_current_datetime()
+
+    # Statutory Tax Deadlines for Compliance (TDS = 7th, GSTR-1 = 11th, GSTR-3B = 20th)
+    statutory_definitions = [
+        {
+            'type': ComplianceItem.TDS_PAYMENT,
+            'name': 'TDS Payment Deposit',
+            'short_name': 'TDS Payment',
+            'due_day': 7,
+            'penalty_info': '1.5% per month interest under Section 201(1A)',
+            'icon': 'bi-cash-coin',
+        },
+        {
+            'type': ComplianceItem.GSTR_1,
+            'name': 'GSTR-1 (Outward Supplies Return)',
+            'short_name': 'GSTR-1',
+            'due_day': 11,
+            'penalty_info': '₹50/day late fee under Section 47',
+            'icon': 'bi-receipt-cutoff',
+        },
+        {
+            'type': ComplianceItem.GSTR_3B,
+            'name': 'GSTR-3B (Monthly Summary & Tax Deposit)',
+            'short_name': 'GSTR-3B',
+            'due_day': 20,
+            'penalty_info': '₹50/day late fee + 18% p.a. interest',
+            'icon': 'bi-file-earmark-ruled',
+        },
+    ]
+
+    urgent_statutory_deadlines = []
+    for s_def in statutory_definitions:
+        due_date = date(current_year, current_month, s_def['due_day'])
+        days_remaining = (due_date - today).days
+
+        pending_items = monthly_compliance.filter(compliance_type=s_def['type'], status=ComplianceItem.PENDING)
+        pending_count = pending_items.count()
+        pending_companies = [item.get_company_display() for item in pending_items]
+        total_companies_count = monthly_compliance.filter(compliance_type=s_def['type']).count()
+        done_count = monthly_compliance.filter(compliance_type=s_def['type'], status=ComplianceItem.DONE).count()
+
+        # Active starting 1 day before deadline (48-hour window from midnight before due date to 11:59 PM on due date)
+        is_active = (0 <= days_remaining <= 1) and (pending_count > 0)
+
+        # Color phase initial state
+        if days_remaining < 0:
+            color_phase = 'red'
+            phase_label = 'OVERDUE'
+        elif days_remaining == 0:
+            color_phase = 'red'
+            phase_label = 'DUE TODAY'
+        elif days_remaining == 1:
+            color_phase = 'yellow'
+            phase_label = 'DUE TOMORROW'
+        else:
+            color_phase = 'normal'
+            phase_label = f'{days_remaining} days left'
+
+        target_iso = f"{due_date.isoformat()}T23:59:59"
+
+        item_dict = {
+            'type': s_def['type'],
+            'name': s_def['name'],
+            'short_name': s_def['short_name'],
+            'due_day': s_def['due_day'],
+            'due_date': due_date,
+            'target_iso': target_iso,
+            'days_remaining': days_remaining,
+            'is_active': is_active,
+            'pending_count': pending_count,
+            'pending_companies': pending_companies,
+            'total_companies_count': total_companies_count,
+            'done_count': done_count,
+            'color_phase': color_phase,
+            'phase_label': phase_label,
+            'penalty_info': s_def['penalty_info'],
+            'icon': s_def['icon'],
+        }
+
+        if is_active:
+            urgent_statutory_deadlines.append(item_dict)
 
     if request.user.is_boss:
         # ==================== BOSS EXECUTIVE COMMAND CENTER ====================
@@ -236,6 +320,10 @@ def dashboard_index(request):
             'num_days_in_month': num_days_in_month,
             'monthly_grid': monthly_grid,
             'monthly_grid_employees': list(active_employees),
+            'today': today,
+            'today_iso': today_iso,
+            'current_now_iso': current_now.isoformat(),
+            'urgent_statutory_deadlines': urgent_statutory_deadlines,
         }
     else:
         # ==================== EMPLOYEE PERSONAL COCKPIT ====================
@@ -264,110 +352,33 @@ def dashboard_index(request):
         my_tasks_needing_revision = my_tasks.filter(status=AssignedTask.PENDING).exclude(boss_remark='')
 
         # Team Activity & Accomplishments stream for employees
-        TEAM_AUDIT_ACTIONS = [
+        # Non-task actions (daily reports, compliance) are company-wide and visible to all.
+        # Task-specific actions are private: only shown for this employee's own task activity.
+        NON_TASK_ACTIONS = [
             'DAILY_TASK_CREATED',
             'DAILY_TASK_UPDATED',
             'COMPLIANCE_MARKED_DONE',
             'COMPLIANCE_MARKED_NA',
             'COMPLIANCE_ITEM_COMPLETED',
+        ]
+        TASK_SPECIFIC_ACTIONS = [
             'TASK_APPROVED',
             'TASK_MARKED_COMPLETED',
             'TASK_REALLOCATED',
             'ASSIGNED_TASK_CREATED',
         ]
-        team_activity_logs = AuditLog.objects.filter(action__in=TEAM_AUDIT_ACTIONS).select_related('user').all()[:10]
-
-        today_iso = today.strftime('%Y-%m-%d')
+        team_activity_logs = AuditLog.objects.filter(
+            Q(action__in=NON_TASK_ACTIONS) |
+            Q(action__in=TASK_SPECIFIC_ACTIONS, user=request.user)
+        ).select_related('user').order_by('-created_at')[:10]
 
         other_employees = User.objects.filter(is_active=True, role=User.EMPLOYEE).exclude(id=request.user.id).order_by('full_name', 'username')
-
-        # Statutory Tax Deadlines for Compliance (TDS = 7th, GSTR-1 = 11th, GSTR-3B = 20th)
-        # Active 1 day before deadline (days_remaining <= 1) and dynamically transitions:
-        # Yellow (Warning: 1 day before) -> Orange (Urgent: dwindling hours) -> Red (Critical: < 6h / Due Today / Overdue)
-        statutory_definitions = [
-            {
-                'type': ComplianceItem.TDS_PAYMENT,
-                'name': 'TDS Payment Deposit',
-                'short_name': 'TDS Payment',
-                'due_day': 7,
-                'penalty_info': '1.5% per month interest under Section 201(1A)',
-                'icon': 'bi-cash-coin',
-            },
-            {
-                'type': ComplianceItem.GSTR_1,
-                'name': 'GSTR-1 (Outward Supplies Return)',
-                'short_name': 'GSTR-1',
-                'due_day': 11,
-                'penalty_info': '₹50/day late fee under Section 47',
-                'icon': 'bi-receipt-cutoff',
-            },
-            {
-                'type': ComplianceItem.GSTR_3B,
-                'name': 'GSTR-3B (Monthly Summary & Tax Deposit)',
-                'short_name': 'GSTR-3B',
-                'due_day': 20,
-                'penalty_info': '₹50/day late fee + 18% p.a. interest',
-                'icon': 'bi-file-earmark-ruled',
-            },
-        ]
-
-        urgent_statutory_deadlines = []
-        for s_def in statutory_definitions:
-            due_date = date(current_year, current_month, s_def['due_day'])
-            days_remaining = (due_date - today).days
-
-            pending_items = monthly_compliance.filter(compliance_type=s_def['type'], status=ComplianceItem.PENDING)
-            pending_count = pending_items.count()
-            pending_companies = [item.get_company_display() for item in pending_items]
-            total_companies_count = monthly_compliance.filter(compliance_type=s_def['type']).count()
-            done_count = monthly_compliance.filter(compliance_type=s_def['type'], status=ComplianceItem.DONE).count()
-
-            # Active starting 1 day before deadline (48-hour window from midnight before due date to 11:59 PM on due date)
-            # Don't show if already completed or if due date has passed
-            is_active = (0 <= days_remaining <= 1) and (pending_count > 0)
-
-            # Color phase initial state
-            if days_remaining < 0:
-                color_phase = 'red'
-                phase_label = 'OVERDUE'
-            elif days_remaining == 0:
-                color_phase = 'red'
-                phase_label = 'DUE TODAY'
-            elif days_remaining == 1:
-                color_phase = 'yellow'
-                phase_label = 'DUE TOMORROW'
-            else:
-                color_phase = 'normal'
-                phase_label = f'{days_remaining} days left'
-
-            target_iso = f"{due_date.isoformat()}T23:59:59"
-
-            item_dict = {
-                'type': s_def['type'],
-                'name': s_def['name'],
-                'short_name': s_def['short_name'],
-                'due_day': s_def['due_day'],
-                'due_date': due_date,
-                'target_iso': target_iso,
-                'days_remaining': days_remaining,
-                'is_active': is_active,
-                'pending_count': pending_count,
-                'pending_companies': pending_companies,
-                'total_companies_count': total_companies_count,
-                'done_count': done_count,
-                'color_phase': color_phase,
-                'phase_label': phase_label,
-                'penalty_info': s_def['penalty_info'],
-                'icon': s_def['icon'],
-            }
-
-            if is_active:
-                urgent_statutory_deadlines.append(item_dict)
 
         context = {
             'role': 'EMPLOYEE',
             'today': today,
             'today_iso': today_iso,
+            'current_now_iso': current_now.isoformat(),
             'current_month_name': calendar.month_name[current_month],
             'compliance_month_name': calendar.month_name[compliance_month],
             'compliance_year': compliance_year,
@@ -410,7 +421,7 @@ def command_palette_api(request):
         return JsonResponse({'error': 'Forbidden. Boss access required.'}, status=403)
 
     q = request.GET.get('q', '').strip()
-    today = timezone.now().date()
+    today = get_current_date()
     current_year = today.year
     current_month = today.month
 

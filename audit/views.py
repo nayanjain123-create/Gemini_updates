@@ -19,10 +19,32 @@ ALLOWED_AUDIT_ACTIONS = [
     'TASK_REMARK_ADDED',
 ]
 
+# Task-specific actions that are private per-employee (non-boss sees only their own)
+TASK_PRIVATE_ACTIONS = [
+    'TASK_APPROVED',
+    'TASK_MARKED_COMPLETED',
+    'TASK_REALLOCATED',
+    'ASSIGNED_TASK_CREATED',
+    'ASSIGNED_TASK_STATUS_UPDATED',
+    'TASK_REMARK_ADDED',
+]
+NON_TASK_ACTIONS = [a for a in ALLOWED_AUDIT_ACTIONS if a not in TASK_PRIVATE_ACTIONS]
+
 @login_required
 def audit_log_list(request):
     # Filter strictly to relevant task creation, completion, payment & assignment logs
-    logs = AuditLog.objects.filter(action__in=ALLOWED_AUDIT_ACTIONS).select_related('user')
+    base_qs = AuditLog.objects.filter(action__in=ALLOWED_AUDIT_ACTIONS).select_related('user')
+
+    if request.user.is_boss:
+        # Boss sees all audit logs
+        logs = base_qs
+    else:
+        # Employees: non-task logs are visible to all; task-specific logs are private (own only)
+        logs = base_qs.filter(
+            Q(action__in=NON_TASK_ACTIONS) |
+            Q(action__in=TASK_PRIVATE_ACTIONS, user=request.user)
+        )
+
 
     
     # Filtering

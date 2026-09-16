@@ -1801,6 +1801,17 @@ html, body {
   overflow: hidden;
   outline: 2pt solid #EF4444 !important;
   outline-offset: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+@media (min-width: 992px) {
+  .tax-countdown-card {
+    width: auto !important;
+    min-width: 340px;
+    max-width: 460px !important;
+  }
 }
 
 /* Phase: Yellow (Due Tomorrow) — blue badge, white clock */
