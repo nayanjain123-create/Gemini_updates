@@ -133,7 +133,190 @@
         </div>
       </div>
 
+      <!-- Device Push Notifications Card -->
+      <div class="card card-stat border-0 shadow-sm position-relative overflow-hidden mb-4">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #A855F7 0%, #6366F1 60%, transparent 100%);"></div>
+
+        <div class="card-body p-4">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
+            <div>
+              <h5 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-bell-fill text-primary"></i> Background Push Notifications
+              </h5>
+              <p class="text-muted small mb-0">
+                Receive instant native OS alerts on this device even when the browser is closed (for assigned tasks, completions, re-allocations, and boss approvals).
+              </p>
+            </div>
+            <div id="pushStatusBadge">
+              <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle">
+                <span class="spinner-border spinner-border-sm me-1" style="width: 12px; height: 12px;"></span> Checking...
+              </span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color, rgba(255,255,255,0.08));">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <button type="button" id="btnEnablePush" class="btn btn-primary btn-sm fw-bold px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="handleEnablePush()">
+                <i class="bi bi-bell-fill"></i> Enable Push Notifications
+              </button>
+              <button type="button" id="btnTestPush" class="btn btn-outline-info btn-sm fw-bold px-3 py-1.5 d-inline-flex align-items-center gap-1.5" onclick="handleTestPush()">
+                <i class="bi bi-send-fill"></i> Send Test Notification
+              </button>
+              <button type="button" id="btnDisablePush" class="btn btn-outline-secondary btn-sm px-3 py-1.5 d-none align-items-center gap-1.5" onclick="handleDisablePush()">
+                <i class="bi bi-bell-slash"></i> Disable on this Device
+              </button>
+            </div>
+            <div id="pushFeedbackMsg" class="small mt-2" style="display:none;"></div>
+          </div>
+
+          <div class="small text-muted d-flex align-items-start gap-2">
+            <i class="bi bi-info-circle text-primary mt-0.5 flex-shrink-0"></i>
+            <div>
+              <strong>Browser Closed Support:</strong> On Android phones, notifications arrive natively even when Chrome is closed. On Windows PC, ensure <em>"Continue running background apps when browser is closed"</em> is enabled in your browser settings (Chrome &rarr; Settings &rarr; System).
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
+
+<script>
+  async function updatePushStatusUI() {
+    const badgeContainer = document.getElementById('pushStatusBadge');
+    const btnEnable = document.getElementById('btnEnablePush');
+    const btnTest = document.getElementById('btnTestPush');
+    const btnDisable = document.getElementById('btnDisablePush');
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      badgeContainer.innerHTML = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle"><i class="bi bi-x-circle me-1"></i> Not Supported in this browser</span>';
+      btnEnable.disabled = true;
+      btnTest.disabled = true;
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      badgeContainer.innerHTML = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle"><i class="bi bi-slash-circle me-1"></i> Blocked by Browser</span>';
+      btnEnable.disabled = true;
+      btnTest.disabled = true;
+      return;
+    }
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+
+      if (sub && Notification.permission === 'granted') {
+        badgeContainer.innerHTML = '<span class="badge bg-success bg-opacity-10 text-success border border-success-subtle"><i class="bi bi-check-circle-fill me-1"></i> Active on this device</span>';
+        btnEnable.classList.add('d-none');
+        btnDisable.classList.remove('d-none');
+        btnDisable.classList.add('d-inline-flex');
+        btnTest.disabled = false;
+      } else {
+        badgeContainer.innerHTML = '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle"><i class="bi bi-exclamation-triangle-fill me-1"></i> Permission Needed</span>';
+        btnEnable.classList.remove('d-none');
+        btnDisable.classList.add('d-none');
+        btnDisable.classList.remove('d-inline-flex');
+        btnTest.disabled = true;
+      }
+    } catch (e) {
+      badgeContainer.innerHTML = '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle">Ready to Enable</span>';
+    }
+  }
+
+  async function handleEnablePush() {
+    const msg = document.getElementById('pushFeedbackMsg');
+    msg.style.display = 'block';
+    msg.className = 'small mt-2 text-info';
+    msg.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Requesting permission and registering device...';
+
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        msg.className = 'small mt-2 text-danger';
+        msg.innerHTML = '<i class="bi bi-x-circle me-1"></i> Notification permission was not granted.';
+        updatePushStatusUI();
+        return;
+      }
+    }
+
+    if (window.geminiSubscribeWebPush) {
+      const success = await window.geminiSubscribeWebPush();
+      if (success) {
+        msg.className = 'small mt-2 text-success';
+        msg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Device registered! You can now send a test notification.';
+      } else {
+        msg.className = 'small mt-2 text-danger';
+        msg.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Could not register push endpoint with server.';
+      }
+    }
+    updatePushStatusUI();
+  }
+
+  async function handleDisablePush() {
+    if (confirm('Disable background push notifications on this device?')) {
+      if (window.geminiUnsubscribeWebPush) {
+        await window.geminiUnsubscribeWebPush();
+      }
+      const msg = document.getElementById('pushFeedbackMsg');
+      msg.style.display = 'block';
+      msg.className = 'small mt-2 text-muted';
+      msg.innerHTML = '<i class="bi bi-bell-slash me-1"></i> Notifications disabled on this device.';
+      updatePushStatusUI();
+    }
+  }
+
+  async function handleTestPush() {
+    const msg = document.getElementById('pushFeedbackMsg');
+    msg.style.display = 'block';
+    msg.className = 'small mt-2 text-info';
+    msg.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending test notification...';
+
+    function getCookie(name) {
+      let cookieValue = '{{ csrf_token }}';
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, 10) === 'csrftoken=') {
+            cookieValue = decodeURIComponent(cookie.substring(10));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    try {
+      const res = await fetch('/accounts/push/test/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        msg.className = 'small mt-2 text-success';
+        msg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Test notification sent! Check your system notification center or screen.';
+      } else {
+        msg.className = 'small mt-2 text-danger';
+        msg.innerHTML = '<i class="bi bi-x-circle me-1"></i> Failed to send test push: ' + (data.error || 'Server error');
+      }
+    } catch (e) {
+      msg.className = 'small mt-2 text-danger';
+      msg.innerHTML = '<i class="bi bi-x-circle me-1"></i> Network error sending test push.';
+    }
+  }
+
+  window.onWebPushSubscribed = function() {
+    updatePushStatusUI();
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updatePushStatusUI, 600);
+  });
+</script>
 {% endblock %}

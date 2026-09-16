@@ -841,25 +841,130 @@
       }
 
       {% if user.is_authenticated %}
-      // ── 2. Request Notification Permission ─────────────────────────────────
+      // ── 2. Web Push Helpers & Subscription ─────────────────────────────────
+      function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      }
+
+      function getCsrfToken() {
+        let cookieValue = '{{ csrf_token }}';
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+              cookieValue = decodeURIComponent(cookie.substring(10));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      async function subscribeUserToWebPush() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+          console.log('[WebPush] Push notifications not supported in this browser.');
+          return false;
+        }
+        try {
+          const reg = swRegistration || await navigator.serviceWorker.ready;
+          if (!reg) return false;
+
+          const res = await fetch('/accounts/push/vapid-key/');
+          if (!res.ok) return false;
+          const data = await res.json();
+          const publicKey = data.publicKey;
+          if (!publicKey) return false;
+
+          let subscription = await reg.pushManager.getSubscription();
+          if (!subscription) {
+            subscription = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(publicKey)
+            });
+            console.log('[WebPush] Device successfully subscribed to push service.');
+          }
+
+          // Register with Django backend
+          await fetch('/accounts/push/subscribe/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCsrfToken(),
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(subscription.toJSON())
+          });
+          console.log('[WebPush] Subscription saved on server.');
+          if (typeof window.onWebPushSubscribed === 'function') {
+            window.onWebPushSubscribed(true);
+          }
+          return true;
+        } catch (err) {
+          console.warn('[WebPush] Push subscription error:', err);
+          if (typeof window.onWebPushSubscribed === 'function') {
+            window.onWebPushSubscribed(false, err);
+          }
+          return false;
+        }
+      }
+      window.geminiSubscribeWebPush = subscribeUserToWebPush;
+
+      async function unsubscribeUserFromWebPush() {
+        try {
+          const reg = swRegistration || await navigator.serviceWorker.ready;
+          if (!reg) return;
+          const subscription = await reg.pushManager.getSubscription();
+          if (subscription) {
+            await fetch('/accounts/push/unsubscribe/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: JSON.stringify({ endpoint: subscription.endpoint })
+            });
+            await subscription.unsubscribe();
+            console.log('[WebPush] Successfully unsubscribed.');
+          }
+          if (typeof window.onWebPushSubscribed === 'function') {
+            window.onWebPushSubscribed(false);
+          }
+        } catch (err) {
+          console.warn('[WebPush] Unsubscribe error:', err);
+        }
+      }
+      window.geminiUnsubscribeWebPush = unsubscribeUserFromWebPush;
+
+      // ── 3. Request Notification Permission ─────────────────────────────────
       function requestBrowserNotificationPermission() {
         if (!('Notification' in window)) {
-          // No OS notification support – still start in-app polling
           startNotificationPolling();
           return;
         }
         if (Notification.permission === 'granted') {
+          subscribeUserToWebPush();
           startNotificationPolling();
           return;
         }
         if (Notification.permission === 'denied') {
-          // Still do in-app polling even without OS permission
           startNotificationPolling();
           return;
         }
-        // Show a soft prompt after 3s, then always start in-app polling regardless
+        // Show soft prompt after 3s
         setTimeout(function() {
-          Notification.requestPermission().then(function() {
+          Notification.requestPermission().then(function(perm) {
+            if (perm === 'granted') {
+              subscribeUserToWebPush();
+            }
             startNotificationPolling();
           }).catch(function() { startNotificationPolling(); });
         }, 3000);

@@ -123,3 +123,19 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # System Current Date Override (Set to None to use actual real-world system date)
 CURRENT_DATE_OVERRIDE = None
 
+# Web Push Notifications (VAPID Configuration)
+WEBPUSH_VAPID_PUBLIC_KEY = os.environ.get(
+    'WEBPUSH_VAPID_PUBLIC_KEY',
+    'BBqXlykh3Ipf7gENt5pd-KSzMnD0q6GyfcC5_OwXPqVOzFfuIkSltqKhd3zGSZK-rXiTjyvCWQB9KB6C-tx7ZwM'
+)
+WEBPUSH_VAPID_PRIVATE_KEY = os.environ.get(
+    'WEBPUSH_VAPID_PRIVATE_KEY',
+    '''-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg0a3z4FtgYP5Q9MyD
+LpetMCKHg/BEm5rFFe9VT+RRKuShRANCAAQal5cpIdyKX+4BDbeaXfikszJw9Kuh
+sn3AufzsFz6lTsxX7iJEpbaioXd8xkmSvq14k48rwlkAfSgegvrce2cD
+-----END PRIVATE KEY-----'''
+)
+WEBPUSH_VAPID_ADMIN_EMAIL = os.environ.get('WEBPUSH_VAPID_ADMIN_EMAIL', 'admin@geminiinsights.local')
+
+

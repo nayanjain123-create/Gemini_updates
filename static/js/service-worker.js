@@ -3,7 +3,7 @@
    Conservative Cache Strategy: Zero-Private-Data Caching Guarantee
    ========================================================================== */
 
-const CACHE_NAME = 'gemini-insights-static-v7';
+const CACHE_NAME = 'gemini-insights-static-v8';
 
 // Static, public assets safe for offline caching (NO private or role data)
 const PRECACHE_ASSETS = [
@@ -167,22 +167,22 @@ self.addEventListener('fetch', (event) => {
 });
 
 /* --------------------------------------------------------------------------
-   4. Push Event: Handle incoming push messages from server
+   4. Push Event: Handle incoming push messages from server (browser closed / background)
    -------------------------------------------------------------------------- */
 self.addEventListener('push', (event) => {
   let data = {
     title: 'Gemini Insights',
-    body: 'You have a new notification.',
+    body: 'You have a new update in Gemini Insights.',
     icon: '/static/pwa/icons/icon-192x192.png',
     badge: '/static/pwa/icons/favicon-32x32.png',
     tag: 'gemini-notification',
-    url: '/tasks/'
+    url: '/reports/tasks/'
   };
 
   if (event.data) {
     try {
       const payload = event.data.json();
-      data = { ...data, ...payload };
+      data = Object.assign({}, data, payload);
     } catch (e) {
       data.body = event.data.text() || data.body;
     }
@@ -190,13 +190,13 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon,
-    badge: data.badge,
-    tag: data.tag,
+    icon: data.icon || '/static/pwa/icons/icon-192x192.png',
+    badge: data.badge || '/static/pwa/icons/favicon-32x32.png',
+    tag: data.tag || 'gemini-notification',
     renotify: true,
     requireInteraction: false,
     silent: false,
-    data: { url: data.url }
+    data: { url: data.url || '/reports/tasks/' }
   };
 
   event.waitUntil(
@@ -209,19 +209,26 @@ self.addEventListener('push', (event) => {
    -------------------------------------------------------------------------- */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+  const rawUrl = (event.notification.data && event.notification.data.url) || '/reports/tasks/';
+  const targetUrl = new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If app already open, focus it
+      // 1. If an open window is already at this exact target URL, focus it
+      for (const client of clientList) {
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // 2. If an open window belongs to this origin, focus and navigate it
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.focus();
-          if (client.navigate) client.navigate(targetUrl);
+          if (client.navigate) return client.navigate(targetUrl);
           return;
         }
       }
-      // Otherwise open new window
+      // 3. Otherwise open new window
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }

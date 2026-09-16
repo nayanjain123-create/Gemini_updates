@@ -37,3 +37,24 @@ class User(AbstractUser):
     def __str__(self):
         display_name = self.full_name if self.full_name else self.username
         return f"{display_name} ({self.get_role_display()})"
+
+
+class PushSubscription(models.Model):
+    user = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='push_subscriptions'
+    )
+    endpoint = models.TextField(unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    user_agent = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"PushSubscription: {self.user.username} ({self.created_at.strftime('%Y-%m-%d')})"
+

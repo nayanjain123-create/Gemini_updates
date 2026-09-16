@@ -38,4 +38,10 @@ urlpatterns = [
     path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(
         template_name='accounts/password_reset_complete.html'
     ), name='password_reset_complete'),
+
+    # Web Push Notifications
+    path('push/vapid-key/', views.push_vapid_key_view, name='push_vapid_key'),
+    path('push/subscribe/', views.push_subscribe_view, name='push_subscribe'),
+    path('push/unsubscribe/', views.push_unsubscribe_view, name='push_unsubscribe'),
+    path('push/test/', views.push_test_view, name='push_test'),
 ]

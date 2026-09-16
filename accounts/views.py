@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 
-from .models import User
+from .models import User, PushSubscription
 from .forms import LoginForm, UserCreateForm, UserEditForm, ProfileEditForm, BossEmployeePasswordResetForm
 from .decorators import boss_required
 from audit.utils import log_action
@@ -341,3 +341,73 @@ def custom_404_view(request, exception=None):
 
 def custom_500_view(request):
     return render(request, 'errors/500.html', status=500)
+
+
+# Web Push API Views
+def push_vapid_key_view(request):
+    """Return the VAPID Public Key for Web Push subscription."""
+    public_key = getattr(settings, 'WEBPUSH_VAPID_PUBLIC_KEY', '')
+    return JsonResponse({'publicKey': public_key})
+
+@login_required
+def push_subscribe_view(request):
+    """Save or update browser Web Push subscription for the authenticated user."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    endpoint = data.get('endpoint')
+    keys = data.get('keys', {})
+    p256dh = keys.get('p256dh')
+    auth = keys.get('auth')
+
+    if not endpoint or not p256dh or not auth:
+        return JsonResponse({'error': 'Missing required subscription fields'}, status=400)
+
+    sub, created = PushSubscription.objects.update_or_create(
+        endpoint=endpoint,
+        defaults={
+            'user': request.user,
+            'p256dh': p256dh,
+            'auth': auth,
+            'user_agent': request.META.get('HTTP_USER_AGENT', '')[:500]
+        }
+    )
+    return JsonResponse({'status': 'ok', 'created': created, 'id': sub.id})
+
+@login_required
+def push_unsubscribe_view(request):
+    """Remove browser Web Push subscription for the authenticated user."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        endpoint = data.get('endpoint')
+    except Exception:
+        endpoint = request.POST.get('endpoint')
+
+    if endpoint:
+        PushSubscription.objects.filter(endpoint=endpoint, user=request.user).delete()
+    return JsonResponse({'status': 'ok'})
+
+@login_required
+def push_test_view(request):
+    """Trigger a test push notification to user's registered devices."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    from .webpush_utils import send_push_notification_to_user
+    send_push_notification_to_user(
+        user=request.user,
+        title="🔔 Test Notification from Gemini Insights",
+        body="Background Web Push notifications are working properly on this device!",
+        url="/accounts/profile/",
+        tag="gemini-test-push"
+    )
+    return JsonResponse({'status': 'ok', 'message': 'Test push notification dispatched'})
+
