@@ -40,7 +40,8 @@ def _send_push_to_subscriptions(subscriptions_data, payload_json):
                 data=payload_json,
                 vapid_private_key=vapid_private_key,
                 vapid_claims=vapid_claims,
-                ttl=86400  # 24 hours delivery window if device is currently offline
+                ttl=86400,  # 24 hours delivery window if device is currently offline
+                headers={"Urgency": "high"}
             )
             logger.info(f"[WebPush] Successfully sent push notification to subscription {sub_id}")
         except WebPushException as ex:
