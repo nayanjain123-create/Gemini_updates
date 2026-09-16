@@ -41,6 +41,9 @@ urlpatterns = [
 
     # Web Push Notifications
     path('push/vapid-key/', views.push_vapid_key_view, name='push_vapid_key'),
+    path('accounts/push/vapid-key/', views.push_vapid_key_view),
     path('push/subscribe/', views.push_subscribe_view, name='push_subscribe'),
+    path('accounts/push/subscribe/', views.push_subscribe_view),
     path('push/unsubscribe/', views.push_unsubscribe_view, name='push_unsubscribe'),
+    path('accounts/push/unsubscribe/', views.push_unsubscribe_view),
 ]

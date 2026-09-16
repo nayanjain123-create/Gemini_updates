@@ -234,13 +234,14 @@
     }
 
     if (window.geminiSubscribeWebPush) {
-      const success = await window.geminiSubscribeWebPush();
-      if (success) {
+      const res = await window.geminiSubscribeWebPush();
+      if (res === true || (res && res.success)) {
         msg.className = 'small mt-2 text-success';
         msg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Device registered! Background push notifications are active.';
       } else {
         msg.className = 'small mt-2 text-danger';
-        msg.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Could not register push endpoint with server.';
+        const errDetail = (res && res.error) ? (': ' + res.error) : '';
+        msg.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Could not register push endpoint' + errDetail;
       }
     }
     updatePushStatusUI();
