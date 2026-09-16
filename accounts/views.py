@@ -395,19 +395,4 @@ def push_unsubscribe_view(request):
         PushSubscription.objects.filter(endpoint=endpoint, user=request.user).delete()
     return JsonResponse({'status': 'ok'})
 
-@login_required
-def push_test_view(request):
-    """Trigger a test push notification to user's registered devices."""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-
-    from .webpush_utils import send_push_notification_to_user
-    send_push_notification_to_user(
-        user=request.user,
-        title="🔔 Test Notification from Gemini Insights",
-        body="Background Web Push notifications are working properly on this device!",
-        url="/accounts/profile/",
-        tag="gemini-test-push"
-    )
-    return JsonResponse({'status': 'ok', 'message': 'Test push notification dispatched'})
 

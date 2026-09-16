@@ -159,9 +159,6 @@
               <button type="button" id="btnEnablePush" class="btn btn-primary btn-sm fw-bold px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="handleEnablePush()">
                 <i class="bi bi-bell-fill"></i> Enable Push Notifications
               </button>
-              <button type="button" id="btnTestPush" class="btn btn-outline-info btn-sm fw-bold px-3 py-1.5 d-inline-flex align-items-center gap-1.5" onclick="handleTestPush()">
-                <i class="bi bi-send-fill"></i> Send Test Notification
-              </button>
               <button type="button" id="btnDisablePush" class="btn btn-outline-secondary btn-sm px-3 py-1.5 d-none align-items-center gap-1.5" onclick="handleDisablePush()">
                 <i class="bi bi-bell-slash"></i> Disable on this Device
               </button>
@@ -186,20 +183,17 @@
   async function updatePushStatusUI() {
     const badgeContainer = document.getElementById('pushStatusBadge');
     const btnEnable = document.getElementById('btnEnablePush');
-    const btnTest = document.getElementById('btnTestPush');
     const btnDisable = document.getElementById('btnDisablePush');
 
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       badgeContainer.innerHTML = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle"><i class="bi bi-x-circle me-1"></i> Not Supported in this browser</span>';
       btnEnable.disabled = true;
-      btnTest.disabled = true;
       return;
     }
 
     if (Notification.permission === 'denied') {
       badgeContainer.innerHTML = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle"><i class="bi bi-slash-circle me-1"></i> Blocked by Browser</span>';
       btnEnable.disabled = true;
-      btnTest.disabled = true;
       return;
     }
 
@@ -212,13 +206,11 @@
         btnEnable.classList.add('d-none');
         btnDisable.classList.remove('d-none');
         btnDisable.classList.add('d-inline-flex');
-        btnTest.disabled = false;
       } else {
         badgeContainer.innerHTML = '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle"><i class="bi bi-exclamation-triangle-fill me-1"></i> Permission Needed</span>';
         btnEnable.classList.remove('d-none');
         btnDisable.classList.add('d-none');
         btnDisable.classList.remove('d-inline-flex');
-        btnTest.disabled = true;
       }
     } catch (e) {
       badgeContainer.innerHTML = '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle">Ready to Enable</span>';
@@ -245,7 +237,7 @@
       const success = await window.geminiSubscribeWebPush();
       if (success) {
         msg.className = 'small mt-2 text-success';
-        msg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Device registered! You can now send a test notification.';
+        msg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Device registered! Background push notifications are active.';
       } else {
         msg.className = 'small mt-2 text-danger';
         msg.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Could not register push endpoint with server.';
@@ -264,50 +256,6 @@
       msg.className = 'small mt-2 text-muted';
       msg.innerHTML = '<i class="bi bi-bell-slash me-1"></i> Notifications disabled on this device.';
       updatePushStatusUI();
-    }
-  }
-
-  async function handleTestPush() {
-    const msg = document.getElementById('pushFeedbackMsg');
-    msg.style.display = 'block';
-    msg.className = 'small mt-2 text-info';
-    msg.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending test notification...';
-
-    function getCookie(name) {
-      let cookieValue = '{{ csrf_token }}';
-      if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-          const cookie = cookies[i].trim();
-          if (cookie.substring(0, 10) === 'csrftoken=') {
-            cookieValue = decodeURIComponent(cookie.substring(10));
-            break;
-          }
-        }
-      }
-      return cookieValue;
-    }
-
-    try {
-      const res = await fetch('/accounts/push/test/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        msg.className = 'small mt-2 text-success';
-        msg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Test notification sent! Check your system notification center or screen.';
-      } else {
-        msg.className = 'small mt-2 text-danger';
-        msg.innerHTML = '<i class="bi bi-x-circle me-1"></i> Failed to send test push: ' + (data.error || 'Server error');
-      }
-    } catch (e) {
-      msg.className = 'small mt-2 text-danger';
-      msg.innerHTML = '<i class="bi bi-x-circle me-1"></i> Network error sending test push.';
     }
   }
 
