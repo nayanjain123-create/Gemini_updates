@@ -318,26 +318,7 @@
 <div class="container-fluid mt-1 mt-md-3 mb-3">
 
   <!-- Header Banner -->
-  <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 gap-2 flex-wrap">
-    <!-- Welcome section: order-2 on mobile (below tax alert), order-lg-1 on desktop (left side) -->
-    <div class="d-flex align-items-center justify-content-between justify-content-lg-start gap-2 gap-sm-3 flex-grow-1 flex-lg-grow-0 w-100 w-lg-auto order-2 order-lg-1">
-      <div class="d-flex align-items-center gap-2">
-        <h2 class="fw-bold mb-0 fs-4 fs-md-2 text-nowrap">Welcome, {{ user.username|capfirst }}!</h2>
-        <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %}">
-          {{ user.get_role_display }}
-        </span>
-      </div>
-
-      {% if user.is_boss %}
-      <button class="btn btn-primary fw-bold shadow-sm d-inline-flex align-items-center gap-1.5 btn-sm px-2.5 px-sm-3 py-1.5 text-nowrap" data-bs-toggle="modal"
-        data-bs-target="#assignTaskModalDashboard">
-        <i class="bi bi-plus-lg"></i>
-        <span class="d-none d-sm-inline">Allocate Task</span>
-        <span class="d-inline d-sm-none">Task</span>
-      </button>
-      {% endif %}
-    </div>
-
+  <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 gap-2 gap-lg-3 flex-wrap">
     <!-- Tax alert countdown: order-1 on mobile (ABOVE Welcome line), order-lg-2 on desktop (right side) -->
     {% if urgent_statutory_deadlines %}
     <div class="w-100 w-lg-auto ms-lg-auto order-1 order-lg-2 mb-2 mb-lg-0">
@@ -369,6 +350,26 @@
         </div>
       </div>
       {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Welcome section: order-2 on mobile (below tax alert), order-lg-1 on desktop (left side) -->
+    <div class="d-flex align-items-center gap-2 order-2 order-lg-1">
+      <h2 class="fw-bold mb-0 fs-4 fs-md-2 text-nowrap">Welcome, {{ user.username|capfirst }}!</h2>
+      <span class="badge {% if user.is_boss %}role-badge-boss{% else %}role-badge-employee{% endif %}">
+        {{ user.get_role_display }}
+      </span>
+    </div>
+
+    <!-- Allocate Task Button: order-3 on mobile (right side of welcome row), order-lg-3 on desktop (right side) -->
+    {% if user.is_boss %}
+    <div class="order-3 order-lg-3 ms-auto {% if urgent_statutory_deadlines %}ms-lg-0{% endif %}">
+      <button class="btn btn-primary fw-bold shadow-sm d-inline-flex align-items-center gap-1.5 btn-sm px-2.5 px-sm-3 py-1.5 py-sm-2 text-nowrap" data-bs-toggle="modal"
+        data-bs-target="#assignTaskModalDashboard">
+        <i class="bi bi-plus-lg"></i>
+        <span class="d-none d-sm-inline">Allocate Task</span>
+        <span class="d-inline d-sm-none">Task</span>
+      </button>
     </div>
     {% endif %}
   </div>

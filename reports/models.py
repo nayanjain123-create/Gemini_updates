@@ -260,7 +260,7 @@ class Notification(models.Model):
         # Trigger Web Push notification (delivers to desktop/phone even if browser is closed)
         try:
             from accounts.webpush_utils import send_push_notification_to_user
-            target_url = '/reports/tasks/' if related_task else '/dashboard/'
+            target_url = '/tasks/' if related_task else '/dashboard/'
             send_push_notification_to_user(
                 user=recipient,
                 title=title,

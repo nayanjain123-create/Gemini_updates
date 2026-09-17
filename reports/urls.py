@@ -11,6 +11,7 @@ urlpatterns = [
     
     # Assigned Tasks Module
     path('tasks/', views.task_list_view, name='task_list'),
+    path('reports/tasks/', views.task_list_view),
     path('tasks/create/', views.task_create_view, name='task_create'),
     path('tasks/<int:task_id>/status/', views.task_status_update_view, name='task_status_update'),
     path('tasks/<int:task_id>/reallocate/', views.task_reallocate_view, name='task_reallocate'),

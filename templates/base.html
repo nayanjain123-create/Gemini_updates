@@ -1037,7 +1037,7 @@
         `;
         toast.addEventListener('click', function(e) {
           if (e.target.tagName !== 'BUTTON') {
-            window.location.href = '/reports/tasks/';
+            window.location.href = "{% url 'reports:task_list' %}";
           }
         });
 
@@ -1147,7 +1147,7 @@
             icon: icon,
             badge: badge,
             tag: 'gemini-notif-' + notif.id,
-            url: '/reports/tasks/'
+            url: "{% url 'reports:task_list' %}"
           });
         } else {
           try {

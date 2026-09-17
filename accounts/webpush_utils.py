@@ -20,6 +20,19 @@ def _send_push_to_subscriptions(subscriptions_data, payload_json):
         logger.warning("[WebPush] WEBPUSH_VAPID_PRIVATE_KEY is not configured.")
         return
 
+    try:
+        from py_vapid import Vapid
+        if isinstance(vapid_private_key, str):
+            if 'BEGIN PRIVATE KEY' in vapid_private_key:
+                vapid_key_obj = Vapid.from_pem(vapid_private_key.encode('utf-8'))
+            else:
+                vapid_key_obj = Vapid.from_string(vapid_private_key)
+        else:
+            vapid_key_obj = vapid_private_key
+    except Exception as e:
+        logger.error(f"[WebPush] Failed to parse VAPID key: {e}")
+        return
+
     vapid_claims = {"sub": f"mailto:{admin_email}"}
 
     from accounts.models import PushSubscription
@@ -38,7 +51,7 @@ def _send_push_to_subscriptions(subscriptions_data, payload_json):
             webpush(
                 subscription_info=sub_info,
                 data=payload_json,
-                vapid_private_key=vapid_private_key,
+                vapid_private_key=vapid_key_obj,
                 vapid_claims=vapid_claims,
                 ttl=86400,  # 24 hours delivery window if device is currently offline
                 headers={"Urgency": "high"}
@@ -55,7 +68,7 @@ def _send_push_to_subscriptions(subscriptions_data, payload_json):
             logger.warning(f"[WebPush] Unexpected error sending push to subscription {sub_id}: {ex}")
 
 
-def send_push_notification_to_user(user, title, body, url='/reports/tasks/', tag=None, icon=None, badge=None):
+def send_push_notification_to_user(user, title, body, url='/tasks/', tag=None, icon=None, badge=None):
     """
     Dispatches a native Web Push notification to all active devices of the given user.
     Executes in a background thread to prevent blocking web request handling.
@@ -75,7 +88,7 @@ def send_push_notification_to_user(user, title, body, url='/reports/tasks/', tag
     payload_dict = {
         "title": str(title),
         "body": str(body),
-        "url": url or '/reports/tasks/',
+        "url": url or '/tasks/',
         "tag": tag or 'gemini-notification',
         "icon": icon or '/static/pwa/icons/icon-192x192.png',
         "badge": badge or '/static/pwa/icons/favicon-32x32.png',

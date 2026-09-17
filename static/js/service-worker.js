@@ -3,7 +3,7 @@
    Conservative Cache Strategy: Zero-Private-Data Caching Guarantee
    ========================================================================== */
 
-const CACHE_NAME = 'gemini-insights-static-v8';
+const CACHE_NAME = 'gemini-insights-static-v9';
 
 // Static, public assets safe for offline caching (NO private or role data)
 const PRECACHE_ASSETS = [
@@ -176,7 +176,7 @@ self.addEventListener('push', (event) => {
     icon: '/static/pwa/icons/icon-192x192.png',
     badge: '/static/pwa/icons/favicon-32x32.png',
     tag: 'gemini-notification',
-    url: '/reports/tasks/'
+    url: '/tasks/'
   };
 
   if (event.data) {
@@ -196,7 +196,7 @@ self.addEventListener('push', (event) => {
     renotify: true,
     requireInteraction: false,
     silent: false,
-    data: { url: data.url || '/reports/tasks/' }
+    data: { url: data.url || '/tasks/' }
   };
 
   event.waitUntil(
@@ -209,7 +209,7 @@ self.addEventListener('push', (event) => {
    -------------------------------------------------------------------------- */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const rawUrl = (event.notification.data && event.notification.data.url) || '/reports/tasks/';
+  const rawUrl = (event.notification.data && event.notification.data.url) || '/tasks/';
   const targetUrl = new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
