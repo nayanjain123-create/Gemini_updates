@@ -91,7 +91,7 @@ def send_push_notification_to_user(user, title, body, url='/tasks/', tag=None, i
         "url": url or '/tasks/',
         "tag": tag or 'gemini-notification',
         "icon": icon or '/static/pwa/icons/icon-192x192.png',
-        "badge": badge or '/static/pwa/icons/favicon-32x32.png',
+        "badge": badge or '/static/pwa/icons/badge-96x96.png',
     }
     payload_json = json.dumps(payload_dict)
 

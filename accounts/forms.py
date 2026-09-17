@@ -44,7 +44,11 @@ class LoginForm(forms.Form):
 
 class UserCreateForm(forms.ModelForm):
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter initial password'}),
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter initial password',
+            'autocomplete': 'new-password'
+        }),
         min_length=6,
         help_text="Minimum 6 characters"
     )
@@ -54,8 +58,14 @@ class UserCreateForm(forms.ModelForm):
         fields = ['full_name', 'username', 'email', 'phone_number', 'role', 'is_helper', 'password']
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Jane Doe'}),
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. janedoe'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'e.g. jane@gemini.com'}),
+            'username': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. janedoe',
+                'autocomplete': 'off',
+                'autocapitalize': 'none',
+                'spellcheck': 'false'
+            }),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'e.g. jane@gemini.com', 'autocomplete': 'off'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional phone number'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'is_helper': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -99,12 +109,12 @@ class ProfileEditForm(forms.ModelForm):
 class BossEmployeePasswordResetForm(forms.Form):
     new_password = forms.CharField(
         label="New Password",
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter new password for employee'}),
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter new password for employee', 'autocomplete': 'new-password'}),
         min_length=6
     )
     confirm_password = forms.CharField(
         label="Confirm New Password",
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm new password'}),
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm new password', 'autocomplete': 'new-password'}),
         min_length=6
     )
 

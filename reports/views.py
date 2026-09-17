@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
+from django.utils.timesince import timesince
+from django.urls import reverse
 from django.db.models import Q
 
 from accounts.models import User
@@ -738,6 +740,8 @@ def notification_mark_read_view(request, notification_id):
     notification.save(update_fields=['is_read', 'read_at'])
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
         return JsonResponse({'status': 'success', 'id': notification.id})
+    if notification.related_task:
+        return redirect('reports:task_list')
     return redirect(request.META.get('HTTP_REFERER', 'dashboard:index'))
 
 @login_required
@@ -756,10 +760,10 @@ def notification_mark_all_read_view(request):
 @login_required
 def notification_latest_api_view(request):
     """
-    Lightweight JSON API to poll for the latest unread notification count and
-    the most recent unread notification details. Used by the browser push
-    notification system in base.html.
-    Returns: { unread_count, latest: { id, title, message, notification_type, created_at } | null }
+    Lightweight JSON API to poll for the latest unread notification count,
+    the most recent unread notification details, and recent notifications list.
+    Used by the browser push notification system and the bell dropdown menu in base.html.
+    Returns: { unread_count, latest: {...}, recent: [...] }
     """
     unread_qs = Notification.objects.filter(
         recipient=request.user, is_read=False
@@ -778,7 +782,34 @@ def notification_latest_api_view(request):
             'created_at': latest.created_at.isoformat(),
         }
 
+    # Fetch up to 8 recent notifications for bell dropdown menu real-time update
+    recent_qs = Notification.objects.filter(
+        recipient=request.user
+    ).select_related('sender', 'related_task').order_by('-created_at')[:8]
+
+    recent_list = []
+    task_list_url = reverse('reports:task_list')
+    for n in recent_qs:
+        time_str = f"{timesince(n.created_at)} ago"
+        if not n.is_read:
+            action_url = reverse('reports:notification_mark_read', args=[n.id])
+        elif n.related_task:
+            action_url = task_list_url
+        else:
+            action_url = '#'
+
+        recent_list.append({
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'notification_type': n.notification_type,
+            'is_read': n.is_read,
+            'time_ago': time_str,
+            'url': action_url,
+        })
+
     return JsonResponse({
         'unread_count': unread_count,
         'latest': latest_data,
+        'recent': recent_list,
     })

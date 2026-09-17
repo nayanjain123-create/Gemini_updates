@@ -16,8 +16,12 @@
         </div>
 
         <div class="card-body p-4">
-          <form method="post">
+          <form method="post" autocomplete="off">
             {% csrf_token %}
+
+            <!-- Anti-autofill dummy fields to prevent browser password managers from filling boss credentials -->
+            <input type="text" style="display:none !important;" name="prevent_autofill_user" autocomplete="off" tabindex="-1" aria-hidden="true">
+            <input type="password" style="display:none !important;" name="prevent_autofill_pwd" autocomplete="new-password" tabindex="-1" aria-hidden="true">
 
             <div class="row g-3">
               <div class="col-12 col-md-6">

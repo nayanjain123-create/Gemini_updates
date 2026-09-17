@@ -134,17 +134,22 @@ class CommandPaletteTests(TestCase):
         self.assertTrue(len(data['compliance']['companies']) > 0)
 
     def test_employee_dashboard_shows_statutory_countdown(self):
-        self.client.login(username='johndoe', password='password123')
-        response = self.client.get(reverse('dashboard:index'))
-        self.assertEqual(response.status_code, 200)
-        # Check that other_employees exists in context
-        self.assertIn('other_employees', response.context)
-        # Check that urgent_statutory_deadlines exists in context
-        self.assertIn('urgent_statutory_deadlines', response.context)
-        # Check template rendered beside-welcome card with countdown
-        self.assertContains(response, 'tax-countdown-card')
-        self.assertContains(response, 'GSTR-1')
-        self.assertContains(response, 'GI, GTW, HUF, International, LLP')
+        from unittest.mock import patch
+        from datetime import datetime
+        # GSTR-1 is due on the 11th of the month. Mock date to 10th to test the 48h active countdown window.
+        mock_now = timezone.make_aware(datetime(2026, 9, 10, 10, 0))
+        with patch('django.utils.timezone.now', return_value=mock_now):
+            self.client.login(username='johndoe', password='password123')
+            response = self.client.get(reverse('dashboard:index'))
+            self.assertEqual(response.status_code, 200)
+            # Check that other_employees exists in context
+            self.assertIn('other_employees', response.context)
+            # Check that urgent_statutory_deadlines exists in context
+            self.assertIn('urgent_statutory_deadlines', response.context)
+            # Check template rendered beside-welcome card with countdown
+            self.assertContains(response, 'tax-countdown-card')
+            self.assertContains(response, 'GSTR-1')
+            self.assertContains(response, 'GI, GTW, HUF, International, LLP')
 
     def test_boss_dashboard_does_not_show_employee_statutory_countdown(self):
         self.client.login(username='bossman', password='password123')

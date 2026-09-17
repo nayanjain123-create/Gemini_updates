@@ -663,46 +663,50 @@
             </span>
           </button>
 
-          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 notification-dropdown-menu" aria-labelledby="mobileNotifDropdown" style="width: 320px; max-width: 92vw; max-height: 420px; overflow-y: auto;">
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 notification-dropdown-menu" id="geminiNotifDropdownMenu" aria-labelledby="mobileNotifDropdown" style="width: 320px; max-width: 92vw; max-height: 420px; overflow-y: auto;">
             <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
               <span class="fw-bold fs-6"><i class="bi bi-bell me-1 text-primary"></i> Notifications</span>
-              {% if unread_notifications_count > 0 %}
-              <a href="{% url 'reports:notification_mark_all_read' %}" class="small text-decoration-none fw-semibold text-primary">Mark all read</a>
-              {% endif %}
+              <span id="geminiMarkAllReadContainer">
+                {% if unread_notifications_count > 0 %}
+                <a href="{% url 'reports:notification_mark_all_read' %}" class="small text-decoration-none fw-semibold text-primary">Mark all read</a>
+                {% endif %}
+              </span>
             </li>
-            {% for n in recent_notifications %}
-            <li class="border-bottom">
-              <a href="{% if not n.is_read %}{% url 'reports:notification_mark_read' n.id %}{% elif n.related_task %}{% url 'reports:task_list' %}{% else %}#{% endif %}" class="dropdown-item p-3 text-wrap {% if not n.is_read %}bg-primary bg-opacity-10 fw-semibold{% endif %}">
-                <div class="d-flex align-items-start gap-2">
-                  <div class="mt-1">
-                    {% if n.notification_type == 'TASK_REALLOCATED' %}
-                      <span class="badge rounded-circle bg-warning text-dark p-2"><i class="bi bi-arrow-left-right"></i></span>
-                    {% elif n.notification_type == 'TASK_COMPLETED_WAITING_APPROVAL' %}
-                      <span class="badge rounded-circle bg-info text-white p-2"><i class="bi bi-hourglass-split"></i></span>
-                    {% elif n.notification_type == 'TASK_APPROVED' %}
-                      <span class="badge rounded-circle bg-success text-white p-2"><i class="bi bi-check-circle-fill"></i></span>
-                    {% elif n.notification_type == 'TASK_REVISION_REQUESTED' %}
-                      <span class="badge rounded-circle bg-danger text-white p-2"><i class="bi bi-exclamation-octagon-fill"></i></span>
-                    {% else %}
-                      <span class="badge rounded-circle bg-primary text-white p-2"><i class="bi bi-info-circle-fill"></i></span>
-                    {% endif %}
-                  </div>
-                  <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between">
-                      <span class="small fw-bold text-body">{{ n.title }}</span>
-                      <span class="badge text-muted p-0" style="font-size: 0.7rem;">{{ n.created_at|timesince }} ago</span>
+            <div id="geminiNotifItemsContainer">
+              {% for n in recent_notifications %}
+              <li class="border-bottom">
+                <a href="{% if not n.is_read %}{% url 'reports:notification_mark_read' n.id %}{% elif n.related_task %}{% url 'reports:task_list' %}{% else %}#{% endif %}" class="dropdown-item p-3 text-wrap {% if not n.is_read %}bg-primary bg-opacity-10 fw-semibold{% endif %}">
+                  <div class="d-flex align-items-start gap-2">
+                    <div class="mt-1">
+                      {% if n.notification_type == 'TASK_REALLOCATED' %}
+                        <span class="badge rounded-circle bg-warning text-dark p-2"><i class="bi bi-arrow-left-right"></i></span>
+                      {% elif n.notification_type == 'TASK_COMPLETED_WAITING_APPROVAL' %}
+                        <span class="badge rounded-circle bg-info text-white p-2"><i class="bi bi-hourglass-split"></i></span>
+                      {% elif n.notification_type == 'TASK_APPROVED' %}
+                        <span class="badge rounded-circle bg-success text-white p-2"><i class="bi bi-check-circle-fill"></i></span>
+                      {% elif n.notification_type == 'TASK_REVISION_REQUESTED' %}
+                        <span class="badge rounded-circle bg-danger text-white p-2"><i class="bi bi-exclamation-octagon-fill"></i></span>
+                      {% else %}
+                        <span class="badge rounded-circle bg-primary text-white p-2"><i class="bi bi-info-circle-fill"></i></span>
+                      {% endif %}
                     </div>
-                    <p class="small text-muted mb-0 mt-1">{{ n.message }}</p>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between">
+                        <span class="small fw-bold text-body">{{ n.title }}</span>
+                        <span class="badge text-muted p-0" style="font-size: 0.7rem;">{{ n.created_at|timesince }} ago</span>
+                      </div>
+                      <p class="small text-muted mb-0 mt-1">{{ n.message }}</p>
+                    </div>
                   </div>
-                </div>
-              </a>
-            </li>
-            {% empty %}
-            <li class="p-4 text-center text-muted">
-              <i class="bi bi-bell-slash fs-2 d-block mb-1"></i>
-              <span class="small">No notifications yet</span>
-            </li>
-            {% endfor %}
+                </a>
+              </li>
+              {% empty %}
+              <li class="p-4 text-center text-muted notif-empty-state">
+                <i class="bi bi-bell-slash fs-2 d-block mb-1"></i>
+                <span class="small">No notifications yet</span>
+              </li>
+              {% endfor %}
+            </div>
             <li class="p-2 text-center bg-body-tertiary">
               <a href="{% url 'reports:task_list' %}" class="small text-decoration-none fw-bold text-primary">Go to Tasks <i class="bi bi-arrow-right"></i></a>
             </li>
@@ -1027,18 +1031,23 @@
           'width: 100%',
         ].join(';');
 
+        toast.className = 'gemini-inapp-toast';
         toast.innerHTML = `
           <div style="font-size:1.3rem;flex-shrink:0;margin-top:1px;">${icon}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:0.83rem;font-weight:700;color:var(--text-main,#F1F5F9);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${notif.title || 'New Notification'}</div>
             <div style="font-size:0.76rem;color:var(--text-muted,#94A3B8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${notif.message || ''}</div>
           </div>
-          <button onclick="this.closest('[id]')?.remove()" style="background:none;border:none;color:var(--text-muted,#94A3B8);cursor:pointer;font-size:0.9rem;padding:0 2px;flex-shrink:0;line-height:1;" title="Dismiss">&#x2715;</button>
+          <button type="button" class="gemini-toast-close-btn" style="background:none;border:none;color:var(--text-muted,#94A3B8);cursor:pointer;font-size:0.95rem;padding:0 4px;flex-shrink:0;line-height:1;" title="Dismiss">&#x2715;</button>
         `;
         toast.addEventListener('click', function(e) {
-          if (e.target.tagName !== 'BUTTON') {
-            window.location.href = "{% url 'reports:task_list' %}";
+          if (e.target.closest('.gemini-toast-close-btn')) {
+            e.stopPropagation();
+            toast.remove();
+            return;
           }
+          // Mark notification as read and navigate to tasks
+          window.location.href = '/reports/notifications/' + notif.id + '/read/';
         });
 
         container.appendChild(toast);
@@ -1096,6 +1105,73 @@
         });
       }
 
+      function renderDropdownNotifications(recent, unreadCount) {
+        const container = document.getElementById('geminiNotifItemsContainer');
+        const markAllContainer = document.getElementById('geminiMarkAllReadContainer');
+        if (!container) return;
+
+        if (markAllContainer) {
+          if (unreadCount > 0) {
+            markAllContainer.innerHTML = '<a href="{% url 'reports:notification_mark_all_read' %}" class="small text-decoration-none fw-semibold text-primary">Mark all read</a>';
+          } else {
+            markAllContainer.innerHTML = '';
+          }
+        }
+
+        if (!recent || recent.length === 0) {
+          container.innerHTML = `
+            <li class="p-4 text-center text-muted notif-empty-state">
+              <i class="bi bi-bell-slash fs-2 d-block mb-1"></i>
+              <span class="small">No notifications yet</span>
+            </li>
+          `;
+          return;
+        }
+
+        const iconMap = {
+          'TASK_REALLOCATED': '<span class="badge rounded-circle bg-warning text-dark p-2"><i class="bi bi-arrow-left-right"></i></span>',
+          'TASK_COMPLETED_WAITING_APPROVAL': '<span class="badge rounded-circle bg-info text-white p-2"><i class="bi bi-hourglass-split"></i></span>',
+          'TASK_APPROVED': '<span class="badge rounded-circle bg-success text-white p-2"><i class="bi bi-check-circle-fill"></i></span>',
+          'TASK_REVISION_REQUESTED': '<span class="badge rounded-circle bg-danger text-white p-2"><i class="bi bi-exclamation-octagon-fill"></i></span>',
+        };
+        const defaultIcon = '<span class="badge rounded-circle bg-primary text-white p-2"><i class="bi bi-info-circle-fill"></i></span>';
+
+        function escapeHtml(str) {
+          if (!str) return '';
+          return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+          });
+        }
+
+        let html = '';
+        recent.forEach(function(n) {
+          const icon = iconMap[n.notification_type] || defaultIcon;
+          const bgClass = !n.is_read ? 'bg-primary bg-opacity-10 fw-semibold' : '';
+          const escapedTitle = escapeHtml(n.title);
+          const escapedMsg = escapeHtml(n.message);
+          const timeAgo = escapeHtml(n.time_ago || '');
+          const url = n.url || '#';
+
+          html += `
+            <li class="border-bottom">
+              <a href="${url}" class="dropdown-item p-3 text-wrap ${bgClass}">
+                <div class="d-flex align-items-start gap-2">
+                  <div class="mt-1">${icon}</div>
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between">
+                      <span class="small fw-bold text-body">${escapedTitle}</span>
+                      <span class="badge text-muted p-0" style="font-size: 0.7rem;">${timeAgo}</span>
+                    </div>
+                    <p class="small text-muted mb-0 mt-1">${escapedMsg}</p>
+                  </div>
+                </div>
+              </a>
+            </li>
+          `;
+        });
+        container.innerHTML = html;
+      }
+
       function startNotificationPolling() {
         if (_pollingIntervalId) return; // already running
         // Poll every 12 seconds for near-real-time experience
@@ -1115,6 +1191,11 @@
 
           // Always update the live badge count
           updateBadgeLive(data.unread_count || 0);
+
+          // Always dynamically refresh bell dropdown menu items in real-time
+          if (Array.isArray(data.recent)) {
+            renderDropdownNotifications(data.recent, data.unread_count || 0);
+          }
 
           if (!data.latest) return;
           const notif = data.latest;
@@ -1136,7 +1217,7 @@
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
         const icon = '/static/pwa/icons/icon-192x192.png';
-        const badge = '/static/pwa/icons/favicon-32x32.png';
+        const badge = '/static/pwa/icons/badge-96x96.png';
 
         // Prefer posting to service worker so it works even when page is in background
         if (swRegistration && swRegistration.active) {
@@ -1171,6 +1252,14 @@
       // (independent of OS notification permission)
       document.addEventListener('DOMContentLoaded', function() {
         startNotificationPolling();
+
+        // Also fetch fresh notifications the moment user clicks the bell icon
+        const bellBtn = document.getElementById('mobileNotifDropdown');
+        if (bellBtn) {
+          bellBtn.addEventListener('show.bs.dropdown', function() {
+            pollForNewNotifications();
+          });
+        }
       });
       {% endif %}
 

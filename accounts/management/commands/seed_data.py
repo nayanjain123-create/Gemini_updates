@@ -30,14 +30,10 @@ class Command(BaseCommand):
                 'phone_number': '+91-9876543210'
             }
         )
-        boss_user.full_name = 'Pratik'
-        boss_user.email = 'pratik@gemini.com'
-        boss_user.role = User.BOSS
-        boss_user.is_staff = True
-        boss_user.is_superuser = True
-        boss_user.set_password('pratik123')
-        boss_user.save()
-        self.stdout.write(self.style.SUCCESS("Configured Boss/Admin account: pratik / pratik123"))
+        if created_boss:
+            boss_user.set_password('pratik123')
+            boss_user.save()
+        self.stdout.write(self.style.SUCCESS("Configured Boss/Admin account: pratik"))
 
         # 2. Create Employee Accounts
         employees_data = [
@@ -57,25 +53,17 @@ class Command(BaseCommand):
                     'email': emp_info['email'],
                     'full_name': emp_info['full_name'],
                     'role': User.EMPLOYEE,
+                    'is_staff': False,
+                    'is_superuser': False,
                 }
             )
-            emp.full_name = emp_info['full_name']
-            emp.email = emp_info['email']
-            emp.role = User.EMPLOYEE
-            emp.is_staff = False
-            emp.is_superuser = False
-            emp.set_password(emp_info['password'])
-            emp.save()
+            if created:
+                emp.set_password(emp_info['password'])
+                emp.save()
             created_employees.append(emp)
-            self.stdout.write(self.style.SUCCESS(f"Configured Employee: {emp_info['username']} / {emp_info['password']}"))
+            self.stdout.write(self.style.SUCCESS(f"Configured Employee: {emp_info['username']}"))
 
-        # 3. Delete any other users not in ALLOWED_USERNAMES
-        other_users = User.objects.exclude(username__in=ALLOWED_USERNAMES)
-        other_count = other_users.count()
-        if other_count > 0:
-            other_names = list(other_users.values_list('username', flat=True))
-            other_users.delete()
-            self.stdout.write(self.style.WARNING(f"Removed {other_count} old user accounts: {', '.join(other_names)}"))
+        # Note: We intentionally DO NOT delete custom user accounts created by the boss.
 
         # 4. Create Compliance Items for current month
         today = timezone.now().date()

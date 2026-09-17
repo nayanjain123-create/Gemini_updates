@@ -3,7 +3,7 @@
    Conservative Cache Strategy: Zero-Private-Data Caching Guarantee
    ========================================================================== */
 
-const CACHE_NAME = 'gemini-insights-static-v9';
+const CACHE_NAME = 'gemini-insights-static-v10';
 
 // Static, public assets safe for offline caching (NO private or role data)
 const PRECACHE_ASSETS = [
@@ -16,6 +16,8 @@ const PRECACHE_ASSETS = [
   '/static/pwa/icons/icon-512x512.png',
   '/static/pwa/icons/apple-touch-icon.png',
   '/static/pwa/icons/favicon-32x32.png',
+  '/static/pwa/icons/badge-96x96.png',
+  '/static/pwa/icons/badge-72x72.png',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'
@@ -174,7 +176,7 @@ self.addEventListener('push', (event) => {
     title: 'Gemini Insights',
     body: 'You have a new update in Gemini Insights.',
     icon: '/static/pwa/icons/icon-192x192.png',
-    badge: '/static/pwa/icons/favicon-32x32.png',
+    badge: '/static/pwa/icons/badge-96x96.png',
     tag: 'gemini-notification',
     url: '/tasks/'
   };
@@ -191,7 +193,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body,
     icon: data.icon || '/static/pwa/icons/icon-192x192.png',
-    badge: data.badge || '/static/pwa/icons/favicon-32x32.png',
+    badge: data.badge || '/static/pwa/icons/badge-96x96.png',
     tag: data.tag || 'gemini-notification',
     renotify: true,
     requireInteraction: false,
@@ -245,7 +247,7 @@ self.addEventListener('message', (event) => {
     self.registration.showNotification(title || 'Gemini Insights', {
       body: body || 'You have a new notification.',
       icon: icon || '/static/pwa/icons/icon-192x192.png',
-      badge: badge || '/static/pwa/icons/favicon-32x32.png',
+      badge: badge || '/static/pwa/icons/badge-96x96.png',
       tag: tag || 'gemini-notification',
       renotify: true,
       requireInteraction: false,
