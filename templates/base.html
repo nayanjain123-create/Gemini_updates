@@ -1174,8 +1174,8 @@
 
       function startNotificationPolling() {
         if (_pollingIntervalId) return; // already running
-        // Poll every 30 seconds for new notifications
-        _pollingIntervalId = setInterval(pollForNewNotifications, 30000);
+        // Poll every 15 seconds for new notifications
+        _pollingIntervalId = setInterval(pollForNewNotifications, 15000);
         // Also run immediately once
         pollForNewNotifications();
       }
