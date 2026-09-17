@@ -23,7 +23,10 @@ urlpatterns = [
 
     # Notifications
     path('notifications/<int:notification_id>/read/', views.notification_mark_read_view, name='notification_mark_read'),
+    path('reports/notifications/<int:notification_id>/read/', views.notification_mark_read_view),
     path('notifications/mark-all-read/', views.notification_mark_all_read_view, name='notification_mark_all_read'),
+    path('reports/notifications/mark-all-read/', views.notification_mark_all_read_view),
     path('notifications/api/latest/', views.notification_latest_api_view, name='notification_latest_api'),
+    path('reports/notifications/api/latest/', views.notification_latest_api_view),
 ]
 

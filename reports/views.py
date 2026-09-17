@@ -412,7 +412,7 @@ def task_create_view(request):
             recipient=task.assigned_to,
             sender=request.user,
             title="New Task Allocated by Boss",
-            message=f"Boss {request.user.full_name or request.user.username} allocated you a task: '{task.title}' (Priority: {task.get_priority_display()}).",
+            message="New task allocated by boss",
             notification_type=Notification.TASK_ASSIGNED,
             related_task=task
         )
@@ -733,16 +733,21 @@ def task_delete_view(request, task_id):
 
 @login_required
 def notification_mark_read_view(request, notification_id):
-    """Mark a single notification as read."""
-    notification = get_object_or_404(Notification, id=notification_id, recipient=request.user)
-    notification.is_read = True
-    notification.read_at = timezone.now()
-    notification.save(update_fields=['is_read', 'read_at'])
+    """Mark a single notification as read and safely navigate."""
+    notification = Notification.objects.filter(id=notification_id, recipient=request.user).first()
+    if notification:
+        notification.is_read = True
+        notification.read_at = timezone.now()
+        notification.save(update_fields=['is_read', 'read_at'])
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+            return JsonResponse({'status': 'success', 'id': notification.id})
+        if notification.related_task:
+            return redirect('reports:task_list')
+        return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
+
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
-        return JsonResponse({'status': 'success', 'id': notification.id})
-    if notification.related_task:
-        return redirect('reports:task_list')
-    return redirect(request.META.get('HTTP_REFERER', 'dashboard:index'))
+        return JsonResponse({'status': 'not_found'})
+    return redirect('reports:task_list')
 
 @login_required
 def notification_mark_all_read_view(request):

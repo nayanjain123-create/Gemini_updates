@@ -1047,7 +1047,7 @@
             return;
           }
           // Mark notification as read and navigate to tasks
-          window.location.href = '/reports/notifications/' + notif.id + '/read/';
+          window.location.href = '/notifications/' + notif.id + '/read/';
         });
 
         container.appendChild(toast);
@@ -1174,8 +1174,8 @@
 
       function startNotificationPolling() {
         if (_pollingIntervalId) return; // already running
-        // Poll every 12 seconds for near-real-time experience
-        _pollingIntervalId = setInterval(pollForNewNotifications, 12000);
+        // Poll every 30 seconds for new notifications
+        _pollingIntervalId = setInterval(pollForNewNotifications, 30000);
         // Also run immediately once
         pollForNewNotifications();
       }
