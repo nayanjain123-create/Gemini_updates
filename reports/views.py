@@ -579,6 +579,7 @@ def task_mark_complete_view(request, task_id):
         f"{emp_name} marked task '{task.title}' as completed (Waiting Approval)."
     )
 
+    request.session['celebrate_completed_task'] = task.title
     messages.success(request, f"Task '{task.title}' marked as completed and submitted to Boss for approval!")
     return redirect(request.META.get('HTTP_REFERER', 'reports:task_list'))
 
@@ -772,7 +773,7 @@ def notification_latest_api_view(request):
     """
     unread_qs = Notification.objects.filter(
         recipient=request.user, is_read=False
-    ).select_related('sender').order_by('-created_at')
+    ).select_related('sender', 'related_task').order_by('-created_at')
 
     unread_count = unread_qs.count()
     latest = unread_qs.first()
@@ -783,6 +784,7 @@ def notification_latest_api_view(request):
             'id': latest.id,
             'title': latest.title,
             'message': latest.message,
+            'task_title': latest.related_task.title if latest.related_task else '',
             'notification_type': latest.notification_type,
             'created_at': latest.created_at.isoformat(),
         }
@@ -807,6 +809,7 @@ def notification_latest_api_view(request):
             'id': n.id,
             'title': n.title,
             'message': n.message,
+            'task_title': n.related_task.title if n.related_task else '',
             'notification_type': n.notification_type,
             'is_read': n.is_read,
             'time_ago': time_str,

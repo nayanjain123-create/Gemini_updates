@@ -3,7 +3,7 @@
    Conservative Cache Strategy: Zero-Private-Data Caching Guarantee
    ========================================================================== */
 
-const CACHE_NAME = 'gemini-insights-static-v10';
+const CACHE_NAME = 'gemini-insights-static-v12';
 
 // Static, public assets safe for offline caching (NO private or role data)
 const PRECACHE_ASSETS = [
@@ -20,7 +20,8 @@ const PRECACHE_ASSETS = [
   '/static/pwa/icons/badge-72x72.png',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'
+  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
+  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js'
 ];
 
 // Patterns that must NEVER be cached or read from cache
@@ -195,7 +196,7 @@ self.addEventListener('push', (event) => {
     icon: data.icon || '/static/pwa/icons/icon-192x192.png',
     badge: data.badge || '/static/pwa/icons/badge-96x96.png',
     tag: data.tag || 'gemini-notification',
-    renotify: true,
+    renotify: false,
     requireInteraction: false,
     silent: false,
     data: { url: data.url || '/tasks/' }
@@ -249,7 +250,7 @@ self.addEventListener('message', (event) => {
       icon: icon || '/static/pwa/icons/icon-192x192.png',
       badge: badge || '/static/pwa/icons/badge-96x96.png',
       tag: tag || 'gemini-notification',
-      renotify: true,
+      renotify: false,
       requireInteraction: false,
       data: { url: url || '/tasks/' }
     });

@@ -790,6 +790,351 @@
   <!-- Bootstrap 5 JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+  <!-- Canvas Confetti Library for Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Global Confetti Celebration & Sound Engine -->
+  <script>
+    (function() {
+      // 1. Web Audio API Victory Chime (Ascending 4-tone harmonic chime: C5 -> E5 -> G5 -> C6)
+      function playChimeSound() {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          const ctx = new AudioContextClass();
+          if (ctx.state === 'suspended') {
+            ctx.resume();
+          }
+
+          const notes = [
+            { freq: 523.25, time: 0.00, dur: 0.22 }, // C5
+            { freq: 659.25, time: 0.09, dur: 0.22 }, // E5
+            { freq: 783.99, time: 0.18, dur: 0.28 }, // G5
+            { freq: 1046.50, time: 0.28, dur: 0.55 } // C6
+          ];
+
+          notes.forEach(function(n) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(n.freq, ctx.currentTime + n.time);
+            gain.gain.setValueAtTime(0.001, ctx.currentTime + n.time);
+            gain.gain.exponentialRampToValueAtTime(0.32, ctx.currentTime + n.time + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + n.time + n.dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + n.time);
+            osc.stop(ctx.currentTime + n.time + n.dur + 0.05);
+          });
+        } catch (err) {
+          console.warn('[Celebration] Audio chime unavailable:', err);
+        }
+      }
+
+      // 2. Multi-Cannon Colorful Confetti Blast
+      function fireConfetti() {
+        if (typeof confetti !== 'function') return;
+        const colors = ['#6366F1', '#22C55E', '#F59E0B', '#3B82F6', '#EC4899', '#8B5CF6', '#10B981'];
+
+        // Center Pop
+        confetti({
+          particleCount: 75,
+          spread: 85,
+          origin: { y: 0.62 },
+          colors: colors,
+          zIndex: 99999
+        });
+
+        // Left Cannon
+        setTimeout(function() {
+          confetti({
+            particleCount: 50,
+            angle: 60,
+            spread: 60,
+            origin: { x: 0.05, y: 0.75 },
+            colors: colors,
+            zIndex: 99999
+          });
+        }, 120);
+
+        // Right Cannon
+        setTimeout(function() {
+          confetti({
+            particleCount: 50,
+            angle: 120,
+            spread: 60,
+            origin: { x: 0.95, y: 0.75 },
+            colors: colors,
+            zIndex: 99999
+          });
+        }, 220);
+      }
+
+      // 3. Celebratory Toast Banner
+      function showCelebrationToast(taskTitle) {
+        let container = document.getElementById('geminiInAppToastContainer');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'geminiInAppToastContainer';
+          container.style.cssText = 'position:fixed;top:70px;right:18px;z-index:99999;max-width:370px;width:calc(100vw - 36px);display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+          document.body.appendChild(container);
+        }
+
+        const banner = document.createElement('div');
+        banner.style.cssText = [
+          'pointer-events:auto',
+          'background: linear-gradient(135deg, rgba(34, 197, 94, 0.96) 0%, rgba(16, 185, 129, 0.96) 100%)',
+          'color:#ffffff',
+          'padding: 12px 16px',
+          'border-radius: 12px',
+          'box-shadow: 0 10px 30px rgba(16, 185, 129, 0.35)',
+          'display: flex',
+          'align-items: center',
+          'gap: 12px',
+          'transform: translateY(-20px)',
+          'opacity: 0',
+          'transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          'border: 1px solid rgba(255, 255, 255, 0.25)',
+          'backdrop-filter: blur(8px)'
+        ].join(';');
+
+        const titleText = taskTitle ? `"${taskTitle}"` : 'Task';
+        banner.innerHTML = `
+          <div style="font-size:1.6rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">&#127881;</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.92rem;letter-spacing:-0.01em;">Task Completed!</div>
+            <div style="font-size:0.78rem;opacity:0.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titleText} submitted for Boss approval.</div>
+          </div>
+          <button type="button" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:0 2px;opacity:0.8;line-height:1;" title="Dismiss" onclick="this.parentElement.remove()">&#x2715;</button>
+        `;
+
+        container.appendChild(banner);
+
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            banner.style.transform = 'translateY(0)';
+            banner.style.opacity = '1';
+          });
+        });
+
+        setTimeout(function() {
+          banner.style.transform = 'translateY(-15px)';
+          banner.style.opacity = '0';
+          setTimeout(function() { banner.remove(); }, 350);
+        }, 5500);
+      }
+
+      // Public API
+      window.geminiCelebration = function(taskTitle, playSound) {
+        const key = 'gemini_celebrated_task_' + encodeURIComponent(taskTitle || 'default');
+        if (sessionStorage.getItem(key)) return;
+        try { sessionStorage.setItem(key, '1'); } catch(e) {}
+        if (playSound !== false) {
+          playChimeSound();
+        }
+        fireConfetti();
+        if (taskTitle) {
+          showCelebrationToast(taskTitle);
+        }
+      };
+
+      // ── B. Boss Approval Royal Fanfare & Golden Star Celebration (Employees Only) ──
+      // 1. Web Audio API Royal Fanfare (Triumphant trumpet/herald chord)
+      function playApprovalFanfare() {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          const ctx = new AudioContextClass();
+          if (ctx.state === 'suspended') {
+            ctx.resume();
+          }
+
+          // Regal two-stage fanfare: Herald intro -> Majestic grand chord
+          const notes = [
+            // Stage 1: Herald Intro (G4 -> C5 -> E5)
+            { freq: 392.00, time: 0.00, dur: 0.16, type: 'triangle', gain: 0.28 },
+            { freq: 523.25, time: 0.12, dur: 0.16, type: 'triangle', gain: 0.30 },
+            { freq: 659.25, time: 0.24, dur: 0.20, type: 'triangle', gain: 0.32 },
+            // Stage 2: Grand Fanfare Climax Chord (G5 + C6 + High E6 shimmer)
+            { freq: 783.99, time: 0.36, dur: 0.70, type: 'triangle', gain: 0.35 },
+            { freq: 1046.50, time: 0.36, dur: 0.85, type: 'triangle', gain: 0.38 },
+            { freq: 1318.51, time: 0.40, dur: 0.95, type: 'sine', gain: 0.25 },
+            { freq: 1567.98, time: 0.44, dur: 1.05, type: 'sine', gain: 0.18 }
+          ];
+
+          notes.forEach(function(n) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = n.type || 'triangle';
+            osc.frequency.setValueAtTime(n.freq, ctx.currentTime + n.time);
+            gain.gain.setValueAtTime(0.001, ctx.currentTime + n.time);
+            gain.gain.exponentialRampToValueAtTime(n.gain || 0.3, ctx.currentTime + n.time + 0.04);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + n.time + n.dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + n.time);
+            osc.stop(ctx.currentTime + n.time + n.dur + 0.05);
+          });
+        } catch (err) {
+          console.warn('[Approval Celebration] Audio fanfare unavailable:', err);
+        }
+      }
+
+      // 2. Fireworks Rocket & Golden Star Shower Confetti
+      function fireApprovalConfetti() {
+        if (typeof confetti !== 'function') return;
+        const royalPalette = ['#FFD700', '#FFA500', '#F59E0B', '#8B5CF6', '#A855F7', '#10B981', '#FFFFFF'];
+
+        // 1. Center Golden Rocket Burst with Stars & Circles
+        confetti({
+          particleCount: 95,
+          spread: 100,
+          origin: { y: 0.55 },
+          colors: royalPalette,
+          shapes: ['star', 'circle'],
+          scalar: 1.3,
+          zIndex: 99999
+        });
+
+        // 2. Left Golden Fountain (+140ms)
+        setTimeout(function() {
+          confetti({
+            particleCount: 65,
+            angle: 55,
+            spread: 65,
+            origin: { x: 0.05, y: 0.72 },
+            colors: ['#FFD700', '#F59E0B', '#FBBF24', '#FFFFFF'],
+            shapes: ['star'],
+            scalar: 1.25,
+            zIndex: 99999
+          });
+        }, 140);
+
+        // 3. Right Royal Purple & Gold Fountain (+240ms)
+        setTimeout(function() {
+          confetti({
+            particleCount: 65,
+            angle: 125,
+            spread: 65,
+            origin: { x: 0.95, y: 0.72 },
+            colors: ['#8B5CF6', '#A855F7', '#FFD700', '#FFFFFF'],
+            shapes: ['star'],
+            scalar: 1.25,
+            zIndex: 99999
+          });
+        }, 240);
+
+        // 4. Soft Golden Star Cascade from Top (+420ms)
+        setTimeout(function() {
+          confetti({
+            particleCount: 45,
+            spread: 120,
+            origin: { y: 0.25 },
+            colors: ['#FFD700', '#FFA500', '#FFFFFF'],
+            shapes: ['star'],
+            gravity: 0.65,
+            scalar: 1.15,
+            zIndex: 99999
+          });
+        }, 420);
+      }
+
+      // 3. Trophy Approval Toast Banner
+      function showApprovalCelebrationToast(taskTitle) {
+        let container = document.getElementById('geminiInAppToastContainer');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'geminiInAppToastContainer';
+          container.style.cssText = 'position:fixed;top:70px;right:18px;z-index:99999;max-width:390px;width:calc(100vw - 36px);display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+          document.body.appendChild(container);
+        }
+
+        const banner = document.createElement('div');
+        banner.style.cssText = [
+          'pointer-events:auto',
+          'background: linear-gradient(135deg, rgba(139, 92, 246, 0.96) 0%, rgba(217, 119, 6, 0.96) 100%)',
+          'color:#ffffff',
+          'padding: 13px 18px',
+          'border-radius: 14px',
+          'box-shadow: 0 12px 35px rgba(217, 119, 6, 0.4)',
+          'display: flex',
+          'align-items: center',
+          'gap: 12px',
+          'transform: translateY(-20px)',
+          'opacity: 0',
+          'transition: all 0.38s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          'border: 1.5px solid rgba(251, 191, 36, 0.55)',
+          'backdrop-filter: blur(10px)'
+        ].join(';');
+
+        const titleText = taskTitle ? `"${taskTitle}"` : 'Your Task';
+        banner.innerHTML = `
+          <div style="font-size:2rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));">&#127942;</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:800;font-size:0.95rem;letter-spacing:-0.01em;color:#FEF08A;">Task Approved by Boss! &#10024;</div>
+            <div style="font-size:0.80rem;opacity:0.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Congratulations! ${titleText} is approved.</div>
+          </div>
+          <button type="button" style="background:none;border:none;color:#fff;font-size:1.15rem;cursor:pointer;padding:0 2px;opacity:0.85;line-height:1;" title="Dismiss" onclick="this.parentElement.remove()">&#x2715;</button>
+        `;
+
+        container.appendChild(banner);
+
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            banner.style.transform = 'translateY(0)';
+            banner.style.opacity = '1';
+          });
+        });
+
+        setTimeout(function() {
+          banner.style.transform = 'translateY(-15px)';
+          banner.style.opacity = '0';
+          setTimeout(function() { banner.remove(); }, 350);
+        }, 6000);
+      }
+
+      // Public API for Employee Approval Celebration (Disabled for Boss)
+      window.geminiApprovalCelebration = function(taskTitle, playSound) {
+        {% if user.is_authenticated and not user.is_boss %}
+        if (playSound !== false) {
+          playApprovalFanfare();
+        }
+        fireApprovalConfetti();
+        if (taskTitle) {
+          showApprovalCelebrationToast(taskTitle);
+        }
+        {% endif %}
+      };
+
+      // Prevent double submit on Mark Complete confirmation
+      document.addEventListener('DOMContentLoaded', function() {
+        const completeForm = document.getElementById('markCompleteConfirmForm');
+        if (completeForm) {
+          completeForm.addEventListener('submit', function(e) {
+            const btn = completeForm.querySelector('button[type="submit"]');
+            if (btn && !btn.dataset.submitted) {
+              btn.dataset.submitted = 'true';
+              btn.disabled = true;
+              btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Submitting...';
+            }
+          });
+        }
+      });
+    })();
+  </script>
+
+  {% if celebrate_task %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        if (window.geminiCelebration) {
+          window.geminiCelebration("{{ celebrate_task|escapejs }}", true);
+        }
+      }, 400);
+    });
+  </script>
+  {% endif %}
+
   <!-- Mobile Sidebar JS -->
   <script>
     function openMobileSidebar() {
@@ -872,6 +1217,19 @@
         return cookieValue;
       }
 
+      let _hasActiveWebPush = false;
+
+      // Check if device already has an active push subscription
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.ready.then(function(reg) {
+          return reg.pushManager.getSubscription();
+        }).then(function(sub) {
+          if (sub) {
+            _hasActiveWebPush = true;
+          }
+        }).catch(function() {});
+      }
+
       async function subscribeUserToWebPush() {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
           const err = 'Push notifications not supported in this browser.';
@@ -917,6 +1275,7 @@
             throw new Error(errData.error || ('Server returned HTTP ' + saveRes.status));
           }
 
+          _hasActiveWebPush = true;
           console.log('[WebPush] Subscription saved on server.');
           if (typeof window.onWebPushSubscribed === 'function') {
             window.onWebPushSubscribed(true);
@@ -948,6 +1307,7 @@
               body: JSON.stringify({ endpoint: subscription.endpoint })
             });
             await subscription.unsubscribe();
+            _hasActiveWebPush = false;
             console.log('[WebPush] Successfully unsubscribed.');
           }
           if (typeof window.onWebPushSubscribed === 'function') {
@@ -986,9 +1346,47 @@
       }
 
       // ── 3. Real-time Notification Polling (In-App + OS Push) ───────────────
-      let _lastSeenNotifId = null;
+      const _userId = '{{ user.id|default:"anon" }}';
+      const _approvalStorageKey = 'gemini_celebrated_approvals_' + _userId;
+      const _toastStorageKey = 'gemini_shown_toasts_' + _userId;
       let _pollingIntervalId = null;
       let _initUnreadCount = {{ unread_notifications_count|default:0 }};
+
+      function hasCelebratedApproval(notifId) {
+        try {
+          const ids = JSON.parse(localStorage.getItem(_approvalStorageKey) || '[]');
+          return ids.includes(notifId);
+        } catch(e) { return false; }
+      }
+
+      function markCelebratedApproval(notifId) {
+        try {
+          const ids = JSON.parse(localStorage.getItem(_approvalStorageKey) || '[]');
+          if (!ids.includes(notifId)) {
+            ids.push(notifId);
+            if (ids.length > 50) ids.shift();
+            localStorage.setItem(_approvalStorageKey, JSON.stringify(ids));
+          }
+        } catch(e) {}
+      }
+
+      function hasShownToast(notifId) {
+        try {
+          const ids = JSON.parse(localStorage.getItem(_toastStorageKey) || '[]');
+          return ids.includes(notifId);
+        } catch(e) { return false; }
+      }
+
+      function markShownToast(notifId) {
+        try {
+          const ids = JSON.parse(localStorage.getItem(_toastStorageKey) || '[]');
+          if (!ids.includes(notifId)) {
+            ids.push(notifId);
+            if (ids.length > 50) ids.shift();
+            localStorage.setItem(_toastStorageKey, JSON.stringify(ids));
+          }
+        } catch(e) {}
+      }
 
       // Inject real-time in-app toast container (top-right, non-blocking)
       (function createToastContainer() {
@@ -1176,9 +1574,16 @@
         if (_pollingIntervalId) return; // already running
         // Poll every 15 seconds for new notifications
         _pollingIntervalId = setInterval(pollForNewNotifications, 15000);
-        // Also run immediately once
-        pollForNewNotifications();
+        // Also run immediately on start (slight delay to let PWA and layout initialize)
+        setTimeout(pollForNewNotifications, 350);
       }
+
+      // Immediately poll whenever tab becomes visible again
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+          pollForNewNotifications();
+        }
+      });
 
       function pollForNewNotifications() {
         fetch('/notifications/api/latest/', {
@@ -1197,24 +1602,59 @@
             renderDropdownNotifications(data.recent, data.unread_count || 0);
           }
 
+          const isPageVisible = !document.hidden && document.visibilityState === 'visible';
+
+          {% if user.is_authenticated and not user.is_boss %}
+          // ── Boss Approval Celebration for Employees ──
+          // Triggers on ANY tab/page when Boss approves a task, but NEVER on mark-as-read or reload
+          let approvalToCelebrate = null;
+          if (data.latest && data.latest.notification_type === 'TASK_APPROVED' && !hasCelebratedApproval(data.latest.id)) {
+            approvalToCelebrate = data.latest;
+          } else if (Array.isArray(data.recent)) {
+            for (let i = 0; i < data.recent.length; i++) {
+              const item = data.recent[i];
+              if (item.notification_type === 'TASK_APPROVED' && !item.is_read && !hasCelebratedApproval(item.id)) {
+                approvalToCelebrate = item;
+                break;
+              }
+            }
+          }
+
+          if (approvalToCelebrate) {
+            markCelebratedApproval(approvalToCelebrate.id);
+            markShownToast(approvalToCelebrate.id);
+            const taskName = approvalToCelebrate.task_title || approvalToCelebrate.title;
+            if (window.geminiApprovalCelebration) {
+              window.geminiApprovalCelebration(taskName, true);
+            }
+            if (!isPageVisible && !_hasActiveWebPush) {
+              fireBrowserNotification(approvalToCelebrate);
+            }
+            return;
+          }
+          {% endif %}
+
           if (!data.latest) return;
           const notif = data.latest;
-          // Only fire if this is a brand-new notification we haven't shown yet
-          if (_lastSeenNotifId === notif.id) return;
-          _lastSeenNotifId = notif.id;
 
-          // Show in-app toast (always, regardless of OS notification permission)
-          showInAppToast(notif);
-          // Play audio chime
-          playChime();
-          // Fire OS notification if permission granted
-          fireBrowserNotification(notif);
+          // Regular notifications (TASK_ASSIGNED, TASK_REALLOCATED, etc.)
+          if (!hasShownToast(notif.id)) {
+            markShownToast(notif.id);
+            showInAppToast(notif);
+            if (isPageVisible) {
+              playChime();
+            } else if (!_hasActiveWebPush) {
+              fireBrowserNotification(notif);
+            }
+          }
         })
         .catch(function() { /* silently ignore network errors */ });
       }
 
       function fireBrowserNotification(notif) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        // Never trigger manual browser notification if page is visible or device is subscribed to Web Push
+        if (!document.hidden || _hasActiveWebPush) return;
 
         const icon = '/static/pwa/icons/icon-192x192.png';
         const badge = '/static/pwa/icons/badge-96x96.png';
@@ -1237,7 +1677,7 @@
               icon: icon,
               badge: badge,
               tag: 'gemini-notif-' + notif.id,
-              renotify: true
+              renotify: false
             });
           } catch (e) {
             console.warn('[Notif] Notification API error:', e);
